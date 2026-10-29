@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0] - 2026-10-29
+
+- Requires agemem 0.2.0, whose MCP and hook entries no longer contain this machine's project path, so `.mcp.json`,
+  `.cursor/mcp.json`, `.codex/config.toml` and the Claude hooks can be committed. The "absolute project path" warning is
+  gone.
+- agemem's Claude Code hooks and `autoMemoryEnabled: false` now go to the shared `.claude/settings.json`;
+  `--personal-settings` passes agemem's `--local-settings` so they go to `.claude/settings.local.json` instead.
+- Re-running on a project set up with 0.1.0 migrates agemem's entries (agemem replaces them and removes the old
+  hooks from `.claude/settings.local.json`).
+
 ## [0.1.0] - 2026-10-29
 
 First release.

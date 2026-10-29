@@ -27,7 +27,7 @@ def with_python_and_web(repo):
 
 def test_commands_are_project_scoped_and_pinned(repo):
     opts = Options(project=repo, tools=["claude", "cursor"], memory_model="qsiv", no_hooks=True)
-    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.1.1", "project", "init", "--mcp", "claude", "cursor",
+    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.2.0", "project", "init", "--mcp", "claude", "cursor",
                                     "--model", "qsiv", "--no-hooks", "--no-input"]
     skills = skills_command(opts)
     assert "-g" not in skills and "--global" not in skills and "--copy" in skills and "skills@1.7.4" in skills
@@ -197,11 +197,17 @@ def test_given_tracked_skills_lock_edited_by_skills_then_it_is_explained(repo):
     assert "skills-lock.json: already tracked by git" in out
 
 
-def test_given_shared_mode_then_absolute_path_warning_is_shown(repo):
-    code, out = full(repo)
-    assert "absolute project path" in out
-    code, out = full(repo, personal_settings=True)
+def test_given_personal_settings_then_agemem_writes_local_claude_settings(repo):
+    opts = Options(project=repo, tools=["claude"], memory_model="jev", personal_settings=True)
+    assert agemem_command(opts)[-2:] == ["--local-settings", "--no-input"]
+    assert "--local-settings" not in agemem_command(Options(project=repo, tools=["claude"], memory_model="jev"))
+
+
+def test_given_shared_mode_then_no_absolute_path_warning(repo):
+    code, out = full(repo, dry_run=True)
+    assert code == 0, out
     assert "absolute project path" not in out
+    assert ".claude/settings.json" in out and ".claude/settings.local.json" not in out
 
 
 def test_given_yes_then_memory_model_is_not_asked(repo):

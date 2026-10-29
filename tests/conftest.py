@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from agentic_loadout import pins
 from agentic_loadout.brew import System
 from agentic_loadout.options import Options
 from agentic_loadout.ui import Prompter
@@ -51,7 +52,7 @@ class FakeExecutor:
 
     def __call__(self, cmd, cwd, env):
         self.calls.append((list(cmd), env))
-        if "agemem@0.1.1" in cmd:
+        if pins.AGEMEM in cmd:
             (cwd / "memory").mkdir(exist_ok=True)
             (cwd / "memory" / "activeContext.md").write_text("x")
             (cwd / ".agemem").mkdir(exist_ok=True)

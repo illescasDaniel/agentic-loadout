@@ -5,7 +5,7 @@
 One command that gives a project a coding-agent setup, for Claude Code, Cursor and Codex.
 
 - **Memory:** [agemem](https://github.com/illescasDaniel/agemem) keeps current state, decisions and durable notes in
-  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.1.1+) also
+  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.0+) also
   disables Claude's built-in auto-memory for the project, to avoid double memory.
 - **Spec-driven development:** the `sdd-feature` skill takes a feature through design, spec, tests, implementation and
   an independent grade, with an approval gate between phases.
@@ -48,8 +48,7 @@ uvx --python 3.12 agentic-loadout . --personal-settings --yes
 > personal, run the install with `--personal-settings`, then walk me through every file that could still be changed or
 > was changed (e.g. `AGENTS.md`, `.claude/`, `CLAUDE.local.md`, `.mcp.json`) so I can choose what to do with each:
 > ignore it (`.gitignore`), exclude it locally (`.git/info/exclude`, or `--git-exclude`), hide just those edits with
-> `git update-index --skip-worktree`, or commit it anyway. Note that agemem writes this machine's absolute project
-> path into its MCP and hook entries, so those files shouldn't be committed as they are.
+> `git update-index --skip-worktree`, or commit it anyway.
 
 </details>
 

@@ -336,6 +336,9 @@ Each item is a concrete check; write the answer back into §3 or §7.
 7. **Upstream issue (agemem):** its MCP and hook entries embed the absolute project path, so they can't be committed
    for a team. agentic-loadout warns in shared mode and leaves the entries alone (agemem writes them). A portable form
    (relative path or `${workspaceFolder}`) would be an agemem change.
+   **Resolved in agemem 0.2.0 (2026-10-29):** entries are path-free (Cursor uses `${workspaceFolder}`), Claude hooks
+   go to `.claude/settings.json`, or `settings.local.json` with `--local-settings`, which agentic-loadout passes in
+   personal mode. The warning is gone.
 
 ---
 

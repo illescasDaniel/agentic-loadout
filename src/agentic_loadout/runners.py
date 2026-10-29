@@ -20,6 +20,8 @@ def agemem_command(opts: Options) -> list[str]:
            "--model", opts.memory_model or "jev"]
     if opts.no_hooks:
         cmd.append("--no-hooks")
+    if opts.personal_settings:
+        cmd.append("--local-settings")
     return [*cmd, "--no-input"]
 
 

@@ -18,8 +18,9 @@ from .runners import Executor, agemem_command, default_executor, run, skills_com
 from .ui import Prompter
 from .vendors import VENDORS, workflow_path
 
-AGEMEM_WRITES = {"claude": [".mcp.json", ".claude/settings.local.json"], "cursor": [".cursor/mcp.json"],
+AGEMEM_WRITES = {"claude": [".mcp.json", ".claude/settings.json"], "cursor": [".cursor/mcp.json"],
                  "codex": [".codex/config.toml", ".codex/hooks.json"]}  # checked in Phase 0 (PLAN.md §8a)
+AGEMEM_PERSONAL_WRITES = {**AGEMEM_WRITES, "claude": [".mcp.json", ".claude/settings.local.json"]}  # --local-settings
 SKILL_DIRS = {"claude": ".claude/skills", "cursor": ".agents/skills", "codex": ".agents/skills"}
 
 
@@ -99,12 +100,8 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
     try:
         if opts.wants("agemem"):
             run(agemem_command(opts), opts, executor, ctx.lines.append)
-            ctx.lines.append(f"             writes {_writes(AGEMEM_WRITES, opts.selected(), 'memory/', '.agemem/')}")
-            if not opts.hide:
-                ctx.warn("agemem wrote this machine's absolute project path (--project /…) into its MCP and hook entries "
-                         "(.mcp.json, .cursor/mcp.json, .codex/config.toml, .claude/settings.local.json). Don't commit them "
-                         "as they are: teammates would get a broken path. Use --personal-settings or --git-exclude, or "
-                         "edit the paths.")
+            writes = AGEMEM_PERSONAL_WRITES if opts.personal_settings else AGEMEM_WRITES
+            ctx.lines.append(f"             writes {_writes(writes, opts.selected(), 'memory/', '.agemem/')}")
             if opts.memory_model == "jev":
                 ctx.note("Memory with the jev provider needs an API key: set AGEMEM_JEV_API_KEY in your environment or "
                          "put it in ~/.config/agemem/config.yaml (agemem created that file). Never paste it into a chat.")
