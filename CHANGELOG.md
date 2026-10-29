@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.1] - 2026-10-29
+
+- Requires agemem 0.2.1, which makes the shared memory store safe when several worktrees or processes write at once.
+
 ## [0.2.0] - 2026-10-29
 
 - Requires agemem 0.2.0, whose MCP and hook entries no longer contain this machine's project path, so `.mcp.json`,

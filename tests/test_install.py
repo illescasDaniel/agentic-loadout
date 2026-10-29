@@ -27,7 +27,7 @@ def with_python_and_web(repo):
 
 def test_commands_are_project_scoped_and_pinned(repo):
     opts = Options(project=repo, tools=["claude", "cursor"], memory_model="qsiv", no_hooks=True)
-    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.2.0", "project", "init", "--mcp", "claude", "cursor",
+    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.2.1", "project", "init", "--mcp", "claude", "cursor",
                                     "--model", "qsiv", "--no-hooks", "--no-input"]
     skills = skills_command(opts)
     assert "-g" not in skills and "--global" not in skills and "--copy" in skills and "skills@1.7.4" in skills

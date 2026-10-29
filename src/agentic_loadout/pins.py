@@ -1,6 +1,6 @@
 """Every external version in one place, so a release updates one file."""
 
-AGEMEM = "agemem@0.2.0"  # 0.2.0+: path-free MCP and hook entries
+AGEMEM = "agemem@0.2.1"  # 0.2.1+: safe concurrent writes across worktrees; 0.2.0+: path-free MCP and hook entries
 AGEMEM_PYTHON = "3.12"
 SKILLS = "skills@1.7.4"
 SDD_SKILL = "illescasDaniel/sdd-feature-skill"

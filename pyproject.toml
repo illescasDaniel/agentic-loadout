@@ -1,6 +1,6 @@
 [project]
 name = "agentic-loadout"
-version = "0.2.0"
+version = "0.2.1"
 description = "One command that gives a project an agent setup: memory (agemem), the SDD skill, subagents and language coders with code-navigation MCPs. Project-scoped, for Claude Code, Cursor and Codex."
 readme = "README.md"
 license = "MIT"

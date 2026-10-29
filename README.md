@@ -5,7 +5,7 @@
 One command that gives a project a coding-agent setup, for Claude Code, Cursor and Codex.
 
 - **Memory:** [agemem](https://github.com/illescasDaniel/agemem) keeps current state, decisions and durable notes in
-  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.0+) also
+  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.1+) also
   disables Claude's built-in auto-memory for the project, to avoid double memory.
 - **Spec-driven development:** the `sdd-feature` skill takes a feature through design, spec, tests, implementation and
   an independent grade, with an approval gate between phases.
