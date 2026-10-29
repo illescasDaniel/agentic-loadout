@@ -4,6 +4,10 @@
 
 One command that gives a project a coding-agent setup, for Claude Code, Cursor and Codex.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/illescasDaniel/agentic-loadout/main/docs/agentic-loadout.jpeg" alt="agentic-loadout" height="450">
+</p>
+
 - **Memory:** [agemem](https://github.com/illescasDaniel/agemem) keeps current state, decisions and durable notes in
   `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.1+) also
   disables Claude's built-in auto-memory for the project, to avoid double memory.
