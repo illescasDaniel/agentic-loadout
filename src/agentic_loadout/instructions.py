@@ -26,7 +26,8 @@ class Section:
 
     @property
     def block(self) -> str:
-        return f"<!-- agentic-loadout:begin {self.name} -->\n{self.body.strip()}\n<!-- agentic-loadout:end {self.name} -->"
+        body = self.body.replace("\r\n", "\n").strip()
+        return f"<!-- agentic-loadout:begin {self.name} -->\n{body}\n<!-- agentic-loadout:end {self.name} -->"
 
 
 def _marker_re(name: str) -> re.Pattern[str]:
