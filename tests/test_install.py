@@ -109,10 +109,10 @@ def test_given_missing_uvx_then_preflight_fails_before_any_write(repo, monkeypat
 def test_given_rerun_then_nothing_changes(repo):
     with_python_and_web(repo)
     full(repo)
-    snapshot = {p: p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git/" not in str(p)}
+    snapshot = {p: p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git" not in p.relative_to(repo).parts}
     code, out = full(repo)
     assert code == 0, out
-    assert {p: p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git/" not in str(p)} == snapshot
+    assert {p: p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git" not in p.relative_to(repo).parts} == snapshot
 
 
 def run_coders(repo, requested, tools=("claude",), system=None, answers=(), **kw):

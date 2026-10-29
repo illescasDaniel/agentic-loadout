@@ -46,7 +46,7 @@ class Ctx:
         shown = path
         if isinstance(path, Path):
             try:
-                shown = path.relative_to(self.project)
+                shown = path.relative_to(self.project).as_posix()
             except ValueError:
                 shown = path
         self.lines.append(f"  {status:<10} {shown}{('  ' + note) if note else ''}")
