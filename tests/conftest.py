@@ -12,7 +12,7 @@ from agentic_loadout.ui import Prompter
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    (tmp_path / "AGENTS.md").write_text("# mine\n")
+    (tmp_path / "AGENTS.md").write_bytes(b"# mine\n")
     subprocess.run(["git", "-C", str(tmp_path), "add", "-A"], check=True)
     subprocess.run(["git", "-C", str(tmp_path), "-c", "user.email=a@b", "-c", "user.name=x", "commit", "-qm", "init"], check=True)
     return tmp_path
@@ -58,12 +58,12 @@ class FakeExecutor:
             path = cwd / ".mcp.json"
             data = json.loads(path.read_text()) if path.exists() else {}
             data.setdefault("mcpServers", {})["agemem"] = {"command": "uvx"}
-            path.write_text(json.dumps(data, indent=2) + "\n")
+            path.write_bytes((json.dumps(data, indent=2) + "\n").encode())
         elif "add" in cmd:
             skill = cwd / ".claude/skills/sdd-feature"
             (skill / "agents").mkdir(parents=True, exist_ok=True)
             (skill / "SKILL.md").write_text("x")
-            (skill / "agents/code-grader.md").write_text("---\nname: code-grader\ndescription: d\n---\n\n# Grader body\n")
+            (skill / "agents/code-grader.md").write_bytes("---\nname: code-grader\ndescription: d\n---\n\n# Grader body\n".encode())
             (cwd / "skills-lock.json").write_text("{}")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
