@@ -1,4 +1,4 @@
-"""The coding tools agent-loadout can set up, where each one keeps its files, and the format it expects.
+"""The coding tools agentic-loadout can set up, where each one keeps its files, and the format it expects.
 
 Agents are authored in Claude Code's format (`agents/*.md`); the other tools get a converted copy:
 

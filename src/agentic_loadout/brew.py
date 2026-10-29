@@ -1,4 +1,4 @@
-"""The one machine-wide action agent-loadout can take: installing the codenav-swift-mcp binary with Homebrew.
+"""The one machine-wide action agentic-loadout can take: installing the codenav-swift-mcp binary with Homebrew.
 
 It never runs without an explicit yes (`--allow-brew` counts), even when `--yes` is passed. The decision is made
 before any file is written (preflight); the install itself runs later, in the coders step.

@@ -9,7 +9,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-BLOCK_START = "# agent-loadout"
+BLOCK_START = "# agentic-loadout"
 # Existing files a run may change; they're hashed to notice edits. New files are found by listing, not hashing.
 WATCHED = (".mcp.json", ".cursor/mcp.json", ".codex/config.toml", ".codex/hooks.json", ".claude/settings.json",
            ".claude/settings.local.json", "AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", ".gitignore")

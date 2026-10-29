@@ -1,5 +1,5 @@
-from agent_loadout.files import Ctx
-from agent_loadout.instructions import Section, apply_sections, choose_targets
+from agentic_loadout.files import Ctx
+from agentic_loadout.instructions import Section, apply_sections, choose_targets
 
 SEC = Section("agents", "## Agents and delegation\n\nText.")
 
@@ -13,7 +13,7 @@ def run(repo, tools, personal, sections=(SEC,), **kw):
 
 def test_given_nothing_when_shared_then_agents_md_created(tmp_path):
     run(tmp_path, ["cursor"], False)
-    assert "agent-loadout:begin agents" in (tmp_path / "AGENTS.md").read_text()
+    assert "agentic-loadout:begin agents" in (tmp_path / "AGENTS.md").read_text()
 
 
 def test_given_claude_md_when_shared_then_claude_md_gets_sections_and_agents_md_untouched(tmp_path):
@@ -65,7 +65,7 @@ def test_given_a_rerun_then_sections_are_replaced_not_duplicated(tmp_path):
     run(tmp_path, ["cursor"], False)
     run(tmp_path, ["cursor"], False, sections=[Section("agents", "## Agents and delegation\n\nNew text.")])
     text = (tmp_path / "AGENTS.md").read_text()
-    assert text.count("agent-loadout:begin agents") == 1 and "New text." in text and "\nText." not in text
+    assert text.count("agentic-loadout:begin agents") == 1 and "New text." in text and "\nText." not in text
 
 
 def test_given_user_has_same_heading_without_markers_then_it_is_skipped_with_a_warning(tmp_path):

@@ -1,5 +1,5 @@
-from agent_loadout.brew import plan_swift, run_plan, swift_binary_path
-from agent_loadout.detect import detect_languages
+from agentic_loadout.brew import plan_swift, run_plan, swift_binary_path
+from agentic_loadout.detect import detect_languages
 from tests.conftest import make_system, prompter
 
 

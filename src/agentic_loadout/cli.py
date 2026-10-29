@@ -1,4 +1,4 @@
-"""Command line: `agent-loadout [PATH] [flags]` for the full install, `agent-loadout coders [LANGUAGE ...]` for the
+"""Command line: `agentic-loadout [PATH] [flags]` for the full install, `agentic-loadout coders [LANGUAGE ...]` for the
 language coders alone."""
 
 from __future__ import annotations
@@ -25,12 +25,12 @@ def _common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--yes", "-y", action="store_true", help="accept the detected suggestions (Homebrew is still asked)")
     p.add_argument("--allow-brew", action="store_true", help="allow the Homebrew install of codenav-swift-mcp without asking")
     p.add_argument("--force", action="store_true", help="overwrite agent files you edited")
-    p.add_argument("--version", action="version", version=f"agent-loadout {__version__}")
+    p.add_argument("--version", action="version", version=f"agentic-loadout {__version__}")
 
 
 def main_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="agent-loadout", description="Set up memory, skills, subagents and language coders in a project.",
-                                epilog="Run `agent-loadout coders --help` to add language coders on their own.")
+    p = argparse.ArgumentParser(prog="agentic-loadout", description="Set up memory, skills, subagents and language coders in a project.",
+                                epilog="Run `agentic-loadout coders --help` to add language coders on their own.")
     p.add_argument("path", nargs="?", default=".", help="project root (default: .)")
     _common(p)
     p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: python,swift,typescript or all (default: detect and confirm)")
@@ -42,7 +42,7 @@ def main_parser() -> argparse.ArgumentParser:
 
 
 def coders_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="agent-loadout coders", description="Install language coders: the coder-<lang> subagent, "
+    p = argparse.ArgumentParser(prog="agentic-loadout coders", description="Install language coders: the coder-<lang> subagent, "
                                 "its code-navigation MCP and the routing rule, always together.")
     p.add_argument("languages", nargs="*", help="python, swift, typescript or all (default: detect and confirm)")
     p.add_argument("--path", default=".", help="project root (default: .)")

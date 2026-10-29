@@ -188,7 +188,7 @@ def prepare(ctx: Ctx, opts: Options, prompter: Prompter, system: System, request
         keys = []
         detected = detect_languages(opts.project)
         if not detected:
-            ctx.log("coders", "-", "no Python, TypeScript or Swift project files found; name a language with `agent-loadout coders <language>`")
+            ctx.log("coders", "-", "no Python, TypeScript or Swift project files found; name a language with `agentic-loadout coders <language>`")
         for key in detected:
             coder = CODERS[key]
             current = status(ctx, coder, opts.selected())
@@ -199,7 +199,7 @@ def prepare(ctx: Ctx, opts: Options, prompter: Prompter, system: System, request
         declined = [k for k in detected if k not in keys and status(ctx, CODERS[k], opts.selected()) != "installed"]
         hint = None
         if declined:
-            hint = "uvx --python 3.12 agent-loadout coders " + " ".join(declined)
+            hint = "uvx --python 3.12 agentic-loadout coders " + " ".join(declined)
             ctx.note(f"Language coders not installed ({', '.join(declined)}). Install them any time with: {hint}")
         if not keys:
             return CoderPlan([], None, hint)

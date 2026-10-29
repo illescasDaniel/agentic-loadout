@@ -1,26 +1,26 @@
-# agent-loadout: implementation plan
+# agentic-loadout: implementation plan
 
 **Goal:** one command that gives a project the agent-guild setup (orchestrator plus subagents, memory, SDD,
 language-aware coders), with much less setup machinery. agent-guild clones, pins, converts and merges everything
-itself (about 1,100 lines of installer). agent-loadout **hands each piece to the tool that already installs it** and
+itself (about 1,100 lines of installer). agentic-loadout **hands each piece to the tool that already installs it** and
 keeps only the parts no external tool covers: subagents, instruction-file sections, and personal-mode bookkeeping.
 
-**Hard rule: project scope only.** agent-loadout writes only inside the target project, always. Nothing user-wide or
+**Hard rule: project scope only.** agentic-loadout writes only inside the target project, always. Nothing user-wide or
 machine-wide: no `~/.claude.json`, `~/.claude/`, `~/.codex/`, `~/.cursor/`, no `claude mcp add -s local|user`, no
 `npx skills add -g`, no global install-mcp target. Every external command is run with its project-level option, and a
 command that has no project-level option for a client is not used for that client (the built-in writer is used
 instead). This is not configurable and there is no per-machine mode. Two accepted exceptions, both outside the
-project files we manage: agemem's own private user config for the Jev key (agemem manages it; agent-loadout never
+project files we manage: agemem's own private user config for the Jev key (agemem manages it; agentic-loadout never
 writes it, it only tells the user how to set it), and the Homebrew install of the codenav-swift-mcp binary, which only
 ever runs after the user confirms it (§2a).
 
 ```bash
-uvx agent-loadout .                      # interactive: detects clients, asks a few questions
-uvx agent-loadout . --dry-run            # prints the commands and the instruction-file diff, writes nothing
-uvx agent-loadout . --with python,typescript --personal-settings --no-input
+uvx agentic-loadout .                      # interactive: detects clients, asks a few questions
+uvx agentic-loadout . --dry-run            # prints the commands and the instruction-file diff, writes nothing
+uvx agentic-loadout . --with python,typescript --personal-settings --no-input
 ```
 
-Status: implemented in `src/agent_loadout` (WP 1-8 except the release workflow); Phase 0 results are in §8a. **Where the text below mentions install-mcp, it is superseded: install-mcp was dropped, the built-in merger does every MCP write.** `coders` takes the project root with `--path`. Sources this plan was written from (local checkouts, 2026-10-28):
+Status: implemented in `src/agentic_loadout` (WP 1-8 except the release workflow); Phase 0 results are in §8a. **Where the text below mentions install-mcp, it is superseded: install-mcp was dropped, the built-in merger does every MCP write.** `coders` takes the project root with `--path`. Sources this plan was written from (local checkouts, 2026-10-28):
 `~/Projects/Code/Agents/claude-agents` (agent-guild 1.3.4), `~/Projects/Code/Python/agemem` (v0.1.0),
 `~/Projects/Code/Skills/sdd-feature-skill`, `~/Projects/Code/MCPs/{codenav-mcp,webnav-ts-mcp}`. There is no local
 codenav-swift-mcp checkout; its launch spec comes from agent-guild's `specialists.py`.
@@ -37,8 +37,8 @@ codenav-swift-mcp checkout; its launch spec comes from agent-guild's `specialist
 | **codenav-mcp** (Python) | `npx install-mcp@1.10.2 ... --client claude-code --local -y` (see §3 for the limits) | Detected (confirmed) or `--with python`. Spec: `uvx --from 'codenav-mcp>=0.2.1,<0.3' codenav-mcp`, optional env `CODENAV_MCP_SOURCE_ROOT` |
 | **codenav-swift-mcp** | same, but needs env `CODENAV_SWIFT_WRITE=1` → built-in writer (install-mcp has no `--env`) | Detected or `--with swift`. Binary via Homebrew, only after the user confirms (§2a) |
 | **webnav-ts-mcp** | same as codenav. Spec: `npx webnav-ts-mcp@0.2` | Detected (confirmed) or `--with typescript` |
-| **Subagents** (orchestrator rules, architect, coder, code-grader, utility, language coders) | **agent-loadout itself** (no external tool exists) | Ported from agent-guild, with jevmem references rewritten to agemem |
-| **Instruction sections** | **agent-loadout itself** | Marker-delimited, idempotent (§4) |
+| **Subagents** (orchestrator rules, architect, coder, code-grader, utility, language coders) | **agentic-loadout itself** (no external tool exists) | Ported from agent-guild, with jevmem references rewritten to agemem |
+| **Instruction sections** | **agentic-loadout itself** | Marker-delimited, idempotent (§4) |
 
 agemem tool names (from `agemem/mcp.py`): `project_memory_recall`, `project_memory_capture`, `project_memory_remember`,
 `project_memory_index`, `project_memory_maintain`. Server key: `agemem`. So the Claude tool IDs are
@@ -51,7 +51,7 @@ three nav servers.
 
 ## 2. CLI surface
 
-Python package (`agent-loadout`, run with `uvx`), argparse, no runtime dependencies beyond `tomlkit` (Codex TOML)
+Python package (`agentic-loadout`, run with `uvx`), argparse, no runtime dependencies beyond `tomlkit` (Codex TOML)
 if needed. The external tools are subprocesses.
 
 | Flag | Effect |
@@ -90,11 +90,11 @@ The full install runs this step by default: it detects the project's languages, 
 matching coders (all three parts). The same step runs on its own at any time:
 
 ```bash
-uvx agent-loadout coders                       # detect languages, show what fits, ask to confirm
-uvx agent-loadout coders python                # just one
-uvx agent-loadout coders python typescript     # several
-uvx agent-loadout coders all                   # all three, no detection
-uvx agent-loadout coders --list                # catalogue, what's detected and what's already installed
+uvx agentic-loadout coders                       # detect languages, show what fits, ask to confirm
+uvx agentic-loadout coders python                # just one
+uvx agentic-loadout coders python typescript     # several
+uvx agentic-loadout coders all                   # all three, no detection
+uvx agentic-loadout coders --list                # catalogue, what's detected and what's already installed
 ```
 
 `coders` takes the same `--tools`, `--personal-settings`, `--dry-run`, `--no-input` and `--yes` flags as the full run,
@@ -214,10 +214,10 @@ decision in this file.
 Sections we add, each wrapped in markers so re-runs replace them and the user can delete them:
 
 ```markdown
-<!-- agent-loadout:begin agents -->
+<!-- agentic-loadout:begin agents -->
 ## Agents and delegation
 ...
-<!-- agent-loadout:end agents -->
+<!-- agentic-loadout:end agents -->
 ```
 
 Sections: `agents` (orchestrator rules → `.agents/development-workflow.md`), `memory` (agemem's suggested workflow,
@@ -250,7 +250,7 @@ hiding happens with git, not by writing elsewhere. Mechanism:
 1. Where the project itself has a personal file, use it: `CLAUDE.local.md` for the rules,
    `.claude/settings.local.json` for Claude settings.
 2. Snapshot before step 3 and after step 8. Every path that is **new** (did not exist before the run) goes into
-   `.git/info/exclude` (one block, marked `# agent-loadout`, so a later run can update it). Directories are excluded
+   `.git/info/exclude` (one block, marked `# agentic-loadout`, so a later run can update it). Directories are excluded
    as a whole (`/.claude/agents/`) when we created them; otherwise each file.
 3. Every file that **already existed** and that we (or a delegated tool) changed can't be hidden by an exclude, so it
    is listed in a final message: the file, what was added to it (e.g. "server `agemem` and `codenav` added to
@@ -334,7 +334,7 @@ Each item is a concrete check; write the answer back into §3 or §7.
 5. Only user-level write: `~/.config/agemem/config.yaml` (template, `api_key: null`). That is the accepted exception.
 6. Decision: no install-mcp; WP 2 only wraps agemem and skills.
 7. **Upstream issue (agemem):** its MCP and hook entries embed the absolute project path, so they can't be committed
-   for a team. agent-loadout warns in shared mode and leaves the entries alone (agemem writes them). A portable form
+   for a team. agentic-loadout warns in shared mode and leaves the entries alone (agemem writes them). A portable form
    (relative path or `${workspaceFolder}`) would be an agemem change.
 
 ---
@@ -346,7 +346,7 @@ Disjoint files so several agents can work in parallel after Phase 0. `WP` number
 | WP | Scope | Files | Depends on | Done when |
 |---|---|---|---|---|
 | **0** | Phase 0 spike | updates to `PLAN.md` | — | Every §8 item answered |
-| **1** | Package skeleton, CLI, client/language detection, preflight, prompts, run order, summary | `pyproject.toml`, `src/agent_loadout/cli.py`, `detect.py`, `preflight.py`, `pins.py` | 0 | `--dry-run` prints the full plan for a sample repo; `--no-input` fails early with every missing choice listed |
+| **1** | Package skeleton, CLI, client/language detection, preflight, prompts, run order, summary | `pyproject.toml`, `src/agentic_loadout/cli.py`, `detect.py`, `preflight.py`, `pins.py` | 0 | `--dry-run` prints the full plan for a sample repo; `--no-input` fails early with every missing choice listed |
 | **2** | External tool runners (agemem, skills, install-mcp), each with a dry-run rendering | `runners.py` | 0 | Each runner is a pure "build command" function + a thin executor; unit-tested on the commands built |
 | **3** | Built-in MCP merger (JSON + Codex TOML, env vars) | `mcp_config.py` (ported) | 0 | Merges into existing configs without losing keys or formatting; existing entries win |
 | **3a** | `coders` subcommand and default step: catalogue, language detection, confirmation, Homebrew flow for Swift; calls WP 3 (MCP), WP 4 (agent) and WP 5 (routing rule) | `coders.py`, `brew.py` | 2, 3, 4, 5 | §2a behaviour covered by tests with platform/`which` stubbed; a coder is never left half-installed; `coders --list` shows detected + installed |
@@ -360,7 +360,7 @@ Disjoint files so several agents can work in parallel after Phase 0. `WP` number
 
 ## 10. Open decisions (defaults in bold; change before implementing)
 
-1. **Name:** `agent-loadout` (the folder name). Separate package, not a new agent-guild major version.
+1. **Name:** `agentic-loadout` (the folder name). Separate package, not a new agent-guild major version.
 2. **Implementation language:** **Python + `uvx`**, matching agent-guild and agemem (Node is required anyway for
    `npx`, so a Node CLI is the alternative).
 3. Personal mode with Cursor/Codex: **write to `AGENTS.md` and warn** (as you described). Alternative: refuse unless
@@ -368,4 +368,4 @@ Disjoint files so several agents can work in parallel after Phase 0. `WP` number
 4. Friction log and its section from agent-guild: **drop** (it depended on memory-bank's `memory/friction/`).
    Alternative: keep it as an optional `--with friction`.
 5. Auto-memory: **set `autoMemoryEnabled: false` when absent**, since agemem is the memory.
-6. agent-guild after this ships: **keep it, point its README to agent-loadout**.
+6. agent-guild after this ships: **keep it, point its README to agentic-loadout**.

@@ -1,6 +1,6 @@
 """Rule sections in the project's instruction file (AGENTS.md / CLAUDE.md / CLAUDE.local.md).
 
-Each section is wrapped in `<!-- agent-loadout:begin NAME -->` markers, so a re-run replaces it in place and the user
+Each section is wrapped in `<!-- agentic-loadout:begin NAME -->` markers, so a re-run replaces it in place and the user
 can delete it. A heading the user already has without our markers is never touched or moved.
 """
 
@@ -26,11 +26,11 @@ class Section:
 
     @property
     def block(self) -> str:
-        return f"<!-- agent-loadout:begin {self.name} -->\n{self.body.strip()}\n<!-- agent-loadout:end {self.name} -->"
+        return f"<!-- agentic-loadout:begin {self.name} -->\n{self.body.strip()}\n<!-- agentic-loadout:end {self.name} -->"
 
 
 def _marker_re(name: str) -> re.Pattern[str]:
-    return re.compile(rf"<!-- agent-loadout:begin {re.escape(name)} -->.*?<!-- agent-loadout:end {re.escape(name)} -->", re.DOTALL)
+    return re.compile(rf"<!-- agentic-loadout:begin {re.escape(name)} -->.*?<!-- agentic-loadout:end {re.escape(name)} -->", re.DOTALL)
 
 
 def _has_heading(text: str, heading: str) -> bool:
@@ -94,7 +94,7 @@ def _write_target(ctx: Ctx, target: Path, sections: list[Section], personal: boo
             continue
         if _has_heading(text, section.heading):
             ctx.warn(f"{target.name} already has a '{section.heading}' section; left unchanged (your rules win). "
-                     "Review it against the agent-loadout version if you want both.")
+                     "Review it against the agentic-loadout version if you want both.")
             continue
         text = text.rstrip("\n") + ("\n\n" if text.strip() else "") + section.block + "\n"
         changed.append(section.name)

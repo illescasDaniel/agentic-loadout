@@ -3,8 +3,8 @@ import tomllib
 
 import pytest
 
-from agent_loadout.files import Ctx
-from agent_loadout.mcp_config import add_servers
+from agentic_loadout.files import Ctx
+from agentic_loadout.mcp_config import add_servers
 
 SERVER = {"type": "stdio", "command": "uvx", "args": ["--from", "codenav-mcp>=0.2.1,<0.3", "codenav-mcp"], "env": {"A": "1"}}
 

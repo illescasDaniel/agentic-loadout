@@ -1,4 +1,6 @@
-# agent-loadout
+# agentic-loadout
+
+[![PyPI](https://img.shields.io/pypi/v/agentic-loadout)](https://pypi.org/project/agentic-loadout/)
 
 One command that gives a project a coding-agent setup, for Claude Code, Cursor and Codex.
 
@@ -12,19 +14,19 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
 - **Language coders:** `coder-python`, `coder-typescript` and `coder-swift` come with code-navigation MCPs, so they
   rename and refactor through the compiler or type checker instead of `grep` and `sed`.
 
-Each piece is handed to the tool that already installs it; agent-loadout only writes what no tool covers.
+Each piece is handed to the tool that already installs it; agentic-loadout only writes what no tool covers.
 
 Needs `uv` (agemem, Python coder) and Node.js 20+ (skill, TypeScript coder).
 
 `--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. For a reproducible run,
-also pin the version: `uvx --python 3.12 agent-loadout@0.1.0 .`
+also pin the version: `uvx --python 3.12 agentic-loadout@0.1.0 .`
 
 ## Use
 
 ```bash
-uvx --python 3.12 agent-loadout .                  # detects your clients and languages, asks before installing
-uvx --python 3.12 agent-loadout . --dry-run        # prints the commands and the files they write; changes nothing
-uvx --python 3.12 agent-loadout . --personal-settings --yes
+uvx --python 3.12 agentic-loadout .                  # detects your clients and languages, asks before installing
+uvx --python 3.12 agentic-loadout . --dry-run        # prints the commands and the files they write; changes nothing
+uvx --python 3.12 agentic-loadout . --personal-settings --yes
 ```
 
 **Everything stays inside the project.** Nothing is written to `~/.claude`, `~/.codex`, `~/.cursor` or any user-wide
@@ -32,7 +34,7 @@ config. The two exceptions: agemem keeps its own private `~/.config/agemem/confi
 coder's binary is installed with Homebrew, only after you say yes (even with `--yes`; `--allow-brew` skips the question).
 
 Rules go to `AGENTS.md`, or to `CLAUDE.md` if the project already has one that isn't just an `@AGENTS.md` import. Each
-section sits between `<!-- agent-loadout:begin NAME -->` markers, so re-running updates it in place.
+section sits between `<!-- agentic-loadout:begin NAME -->` markers, so re-running updates it in place.
 
 ## What gets installed
 
@@ -41,14 +43,14 @@ section sits between `<!-- agent-loadout:begin NAME -->` markers, so re-running 
 | Project memory (`memory/`, notes, MCP, hooks) | [agemem](https://github.com/illescasDaniel/agemem) `project init` |
 | Spec-driven development skill | `npx skills add illescasDaniel/sdd-feature-skill` |
 | Worktree skill (`/worktree create\|save\|apply\|delete`) | `npx skills add illescasDaniel/worktree-skill` |
-| Subagents (`architect`, `coder`, `code-grader`, `utility`) and the workflow rules | agent-loadout |
-| Language coders (`coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agent-loadout |
+| Subagents (`architect`, `coder`, `code-grader`, `utility`) and the workflow rules | agentic-loadout |
+| Language coders (`coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agentic-loadout |
 
 ### Worktrees
 
 The `worktree` skill runs a task in an isolated git worktree. `/worktree create` branches from the current branch and
 sets up the environment, `save` commits, `apply` merges into the branch the worktree came from, and `delete` removes
-it. agent-loadout adds a short rule to your instructions: when your checkout has uncommitted changes the agent didn't
+it. agentic-loadout adds a short rule to your instructions: when your checkout has uncommitted changes the agent didn't
 make, it asks once whether to use a worktree, and after the task it offers `save`, `apply` and `delete`. It never
 merges, pushes or deletes without your yes. Leave it out with `--without worktree`.
 
@@ -58,9 +60,9 @@ A coder is one unit: the `coder-<lang>` subagent, the language's navigation MCP 
 installed together, because without the subagent's instructions the agent doesn't use the MCP.
 
 ```bash
-uvx --python 3.12 agent-loadout coders                    # detect languages, confirm, install
-uvx --python 3.12 agent-loadout coders python typescript  # or name them (python, typescript, swift, all)
-uvx --python 3.12 agent-loadout coders --list             # catalogue, what is detected, what is installed
+uvx --python 3.12 agentic-loadout coders                    # detect languages, confirm, install
+uvx --python 3.12 agentic-loadout coders python typescript  # or name them (python, typescript, swift, all)
+uvx --python 3.12 agentic-loadout coders --list             # catalogue, what is detected, what is installed
 ```
 
 | Language | MCP | Detected by |

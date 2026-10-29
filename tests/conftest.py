@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from agent_loadout.brew import System
-from agent_loadout.options import Options
-from agent_loadout.ui import Prompter
+from agentic_loadout.brew import System
+from agentic_loadout.options import Options
+from agentic_loadout.ui import Prompter
 
 
 @pytest.fixture

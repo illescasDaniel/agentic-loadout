@@ -1,10 +1,10 @@
 import json
 import subprocess
 
-from agent_loadout import coders, install, pins, preflight
-from agent_loadout.files import Ctx
-from agent_loadout.options import Options
-from agent_loadout.runners import agemem_command, skills_command
+from agentic_loadout import coders, install, pins, preflight
+from agentic_loadout.files import Ctx
+from agentic_loadout.options import Options
+from agentic_loadout.runners import agemem_command, skills_command
 from tests.conftest import FakeExecutor, make_system, prompter
 
 
@@ -144,7 +144,7 @@ def test_given_no_input_without_yes_then_nothing_is_installed_and_command_is_pri
     (repo / "pyproject.toml").write_text("")
     code, out = run_coders(repo, None, no_input=True)
     assert code == 0 and not (repo / ".claude/agents/coder-python.md").exists() and not (repo / ".mcp.json").exists()
-    assert "agent-loadout coders python" in out
+    assert "agentic-loadout coders python" in out
 
 
 def test_given_invalid_mcp_json_then_the_coder_is_not_left_half_installed(repo):

@@ -1,4 +1,4 @@
-"""The external installers agent-loadout hands work to. Each one is a pure "build the command" function plus a thin
+"""The external installers agentic-loadout hands work to. Each one is a pure "build the command" function plus a thin
 executor, so `--dry-run` can print exactly what would run and tests can check the command lines."""
 
 from __future__ import annotations
