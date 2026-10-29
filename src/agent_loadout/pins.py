@@ -1,0 +1,12 @@
+"""Every external version in one place, so a release updates one file."""
+
+AGEMEM = "agemem@0.1.1"
+AGEMEM_PYTHON = "3.12"
+SKILLS = "skills@1.7.4"
+SDD_SKILL = "illescasDaniel/sdd-feature-skill"
+SDD_SKILL_REF = "5443fe57ff5f0fef25d8a76f75dae64953bb9e7b"
+SDD_SKILL_NAME = "sdd-feature"
+CODENAV_SPEC = "codenav-mcp>=0.2.1,<0.3"
+WEBNAV_SPEC = "webnav-ts-mcp@0.2"
+SWIFT_BREW_FORMULA = "illescasDaniel/tap/codenav-swift-mcp"
+XCODE_BUILD_SERVER_FORMULA = "xcode-build-server"

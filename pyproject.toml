@@ -1,0 +1,27 @@
+[project]
+name = "agent-loadout"
+version = "0.1.0"
+description = "One command that gives a project an agent setup: memory (agemem), the SDD skill, subagents and language coders with code-navigation MCPs. Project-scoped, for Claude Code, Cursor and Codex."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Daniel Illescas Romero", email = "illescas.daniel@protonmail.com" }]
+keywords = ["claude-code", "cursor", "codex", "subagents", "mcp", "memory", "agemem", "sdd"]
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0.3,<7"]
+
+[project.scripts]
+agent-loadout = "agent_loadout.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_loadout"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
