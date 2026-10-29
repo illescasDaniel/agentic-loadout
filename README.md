@@ -29,7 +29,8 @@ uvx --python 3.12 agentic-loadout . --dry-run        # prints the commands and t
 uvx --python 3.12 agentic-loadout . --personal-settings --yes
 ```
 
-Or let your coding agent do it. Paste this prompt into Claude Code, Cursor or Codex, opened in the project:
+<details>
+<summary>Or let your coding agent do it: a prompt to paste into Claude Code, Cursor or Codex, opened in the project</summary>
 
 > Install agentic-loadout in this project. It is a PyPI package (`agentic-loadout`), run with
 > `uvx --python 3.12 agentic-loadout` (it needs `uv` and Node.js 20+; tell me if either is missing). First read the
@@ -49,6 +50,8 @@ Or let your coding agent do it. Paste this prompt into Claude Code, Cursor or Co
 > ignore it (`.gitignore`), exclude it locally (`.git/info/exclude`, or `--git-exclude`), hide just those edits with
 > `git update-index --skip-worktree`, or commit it anyway. Note that agemem writes this machine's absolute project
 > path into its MCP and hook entries, so those files shouldn't be committed as they are.
+
+</details>
 
 **Everything stays inside the project.** Nothing is written to `~/.claude`, `~/.codex`, `~/.cursor` or any user-wide
 config. The two exceptions: agemem keeps its own private `~/.config/agemem/config.yaml` for the API key, and the Swift
