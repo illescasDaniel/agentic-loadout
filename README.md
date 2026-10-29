@@ -29,6 +29,27 @@ uvx --python 3.12 agentic-loadout . --dry-run        # prints the commands and t
 uvx --python 3.12 agentic-loadout . --personal-settings --yes
 ```
 
+Or let your coding agent do it. Paste this prompt into Claude Code, Cursor or Codex, opened in the project:
+
+> Install agentic-loadout in this project. It is a PyPI package (`agentic-loadout`), run with
+> `uvx --python 3.12 agentic-loadout` (it needs `uv` and Node.js 20+; tell me if either is missing). First read the
+> project's existing instructions, agents, skills, MCP config and settings (`AGENTS.md`, `CLAUDE.md`, `.claude/`,
+> `.cursor/`, `.codex/`, `.agents/`, `.mcp.json`). Run `uvx --python 3.12 agentic-loadout . --dry-run` and review the
+> plan with me: which clients to target (`--tools claude,cursor,codex`), which parts to leave out (`--without
+> sdd|agemem|agents|coders|worktree`), which language coders it detected (`--with python,swift,typescript`), the memory
+> provider (`--memory-model jev|qsiv`), and anything that contradicts the project's current rules or setup. Never
+> overwrite or move my existing rules; resolve conflicts with me, and ask before using `--force`. Ask me before it runs
+> Homebrew for the Swift coder. Then run the real install, review the resulting diff, warnings and next steps, adapt
+> the generated sections (quality-gate command, layering, conventions, how to set up the environment in a new
+> worktree) to this project, and tell me what is left for me to do, such as restarting the client and approving the new
+> MCP servers and hooks. If memory uses the jev provider, tell me where the API key goes; never ask me to paste it into
+> the chat. Also ask me whether the changes should be added to git and committed, or kept as my personal settings; if
+> personal, run the install with `--personal-settings`, then walk me through every file that could still be changed or
+> was changed (e.g. `AGENTS.md`, `.claude/`, `CLAUDE.local.md`, `.mcp.json`) so I can choose what to do with each:
+> ignore it (`.gitignore`), exclude it locally (`.git/info/exclude`, or `--git-exclude`), hide just those edits with
+> `git update-index --skip-worktree`, or commit it anyway. Note that agemem writes this machine's absolute project
+> path into its MCP and hook entries, so those files shouldn't be committed as they are.
+
 **Everything stays inside the project.** Nothing is written to `~/.claude`, `~/.codex`, `~/.cursor` or any user-wide
 config. The two exceptions: agemem keeps its own private `~/.config/agemem/config.yaml` for the API key, and the Swift
 coder's binary is installed with Homebrew, only after you say yes (even with `--yes`; `--allow-brew` skips the question).
