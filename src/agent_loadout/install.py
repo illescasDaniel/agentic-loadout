@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from . import coders, git_state
+from . import coders, git_state, pins
 from .agents import ASSETS, install_agents
 from .brew import System
 from .files import Ctx, read_json, write_json
@@ -20,8 +20,11 @@ from .vendors import VENDORS, workflow_path
 
 AGEMEM_WRITES = {"claude": [".mcp.json", ".claude/settings.local.json"], "cursor": [".cursor/mcp.json"],
                  "codex": [".codex/config.toml", ".codex/hooks.json"]}  # checked in Phase 0 (PLAN.md §8a)
-SKILL_WRITES = {"claude": [".claude/skills/sdd-feature/"], "cursor": [".agents/skills/sdd-feature/"],
-                "codex": [".agents/skills/sdd-feature/"]}
+SKILL_DIRS = {"claude": ".claude/skills", "cursor": ".agents/skills", "codex": ".agents/skills"}
+
+
+def _skill_writes(name: str) -> dict[str, list[str]]:
+    return {tool: [f"{folder}/{name}/"] for tool, folder in SKILL_DIRS.items()}
 
 
 def _writes(table: dict[str, list[str]], tools: list[str], *always: str) -> str:
@@ -44,6 +47,8 @@ def _tail_rules(opts: Options) -> list[Section]:
         sections.append(Section("memory", (ASSETS / "templates" / "memory-rules.md").read_text(encoding="utf-8").strip()))
     if opts.wants("sdd"):
         sections.append(Section("sdd", (ASSETS / "templates" / "sdd-rules.md").read_text(encoding="utf-8").strip()))
+    if opts.wants("worktree"):
+        sections.append(Section("worktree", (ASSETS / "templates" / "worktree-rules.md").read_text(encoding="utf-8").strip()))
     return sections
 
 
@@ -105,7 +110,10 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
                          "put it in ~/.config/agemem/config.yaml (agemem created that file). Never paste it into a chat.")
         if opts.wants("sdd"):
             run(skills_command(opts), opts, executor, ctx.lines.append, skills_env())
-            ctx.lines.append(f"             writes {_writes(SKILL_WRITES, opts.selected(), 'skills-lock.json')}")
+            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.SDD_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
+        if opts.wants("worktree"):
+            run(skills_command(opts, pins.WORKTREE_SKILL, pins.WORKTREE_SKILL_REF), opts, executor, ctx.lines.append, skills_env())
+            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.WORKTREE_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
         sections = _rules(opts)
         if opts.wants("agents"):
             install_agents(ctx, opts.selected(), opts.wants("sdd"), opts.wants("agemem"))

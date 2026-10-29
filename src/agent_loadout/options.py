@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .vendors import TOOLS
 
-COMPONENTS = ("sdd", "agemem", "agents", "coders")
+COMPONENTS = ("sdd", "agemem", "agents", "coders", "worktree")
 
 
 @dataclass

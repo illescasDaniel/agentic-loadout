@@ -1,7 +1,7 @@
 import json
 import subprocess
 
-from agent_loadout import coders, install, preflight
+from agent_loadout import coders, install, pins, preflight
 from agent_loadout.files import Ctx
 from agent_loadout.options import Options
 from agent_loadout.runners import agemem_command, skills_command
@@ -89,7 +89,7 @@ def test_given_full_install_then_no_jevmem_anywhere_and_grader_comes_from_the_sk
 
 def test_given_without_sdd_and_agemem_then_neither_runs_and_agents_have_no_memory_tools(repo):
     executor = FakeExecutor()
-    code, out = full(repo, executor=executor, without=frozenset({"sdd", "agemem", "coders"}))
+    code, out = full(repo, executor=executor, without=frozenset({"sdd", "agemem", "coders", "worktree"}))
     assert code == 0, out
     assert executor.calls == [] and not (repo / ".claude/agents/code-grader.md").exists()
     assert "agemem" not in (repo / ".claude/agents/coder.md").read_text()
@@ -209,3 +209,22 @@ def test_given_yes_then_memory_model_is_not_asked(repo):
     p = prompter(yes=True)
     install.run_install(opts, p, make_system()[0], FakeExecutor(), lambda _l: None)
     assert opts.memory_model == "jev" and not p.asked
+
+
+def test_given_worktree_component_then_skill_is_installed_pinned_and_rules_added(repo):
+    executor = FakeExecutor()
+    code, out = full(repo, executor=executor)
+    assert code == 0, out
+    adds = [c for c, _env in executor.calls if "add" in c]
+    assert any(f"{pins.WORKTREE_SKILL}#{pins.WORKTREE_SKILL_REF}" in c for c in adds)
+    assert all("-g" not in c for c in adds)
+    agents_md = (repo / "AGENTS.md").read_text()
+    assert "## Isolated worktrees" in agents_md and "/worktree apply" in agents_md
+
+
+def test_given_without_worktree_then_neither_skill_nor_rules(repo):
+    executor = FakeExecutor()
+    code, out = full(repo, executor=executor, without=frozenset({"worktree"}))
+    assert code == 0, out
+    assert not any(pins.WORKTREE_SKILL in " ".join(c) for c, _env in executor.calls)
+    assert "Isolated worktrees" not in (repo / "AGENTS.md").read_text()

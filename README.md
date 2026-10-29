@@ -40,8 +40,17 @@ section sits between `<!-- agent-loadout:begin NAME -->` markers, so re-running 
 |---|---|
 | Project memory (`memory/`, notes, MCP, hooks) | [agemem](https://github.com/illescasDaniel/agemem) `project init` |
 | Spec-driven development skill | `npx skills add illescasDaniel/sdd-feature-skill` |
+| Worktree skill (`/worktree create\|save\|apply\|delete`) | `npx skills add illescasDaniel/worktree-skill` |
 | Subagents (`architect`, `coder`, `code-grader`, `utility`) and the workflow rules | agent-loadout |
 | Language coders (`coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agent-loadout |
+
+### Worktrees
+
+The `worktree` skill runs a task in an isolated git worktree. `/worktree create` branches from the current branch and
+sets up the environment, `save` commits, `apply` merges into the branch the worktree came from, and `delete` removes
+it. agent-loadout adds a short rule to your instructions: when your checkout has uncommitted changes the agent didn't
+make, it asks once whether to use a worktree, and after the task it offers `save`, `apply` and `delete`. It never
+merges, pushes or deletes without your yes. Leave it out with `--without worktree`.
 
 ### Language coders
 
@@ -70,7 +79,7 @@ lists it with your options. With Cursor or Codex selected the rules go to `AGENT
 
 ### Flags
 
-`--tools claude,cursor,codex` · `--with python,swift,typescript|all` · `--without sdd|agemem|agents|coders` ·
+`--tools claude,cursor,codex` · `--with python,swift,typescript|all` · `--without sdd|agemem|agents|coders|worktree` ·
 `--memory-model jev|qsiv` · `--no-hooks` · `--model ALIAS` · `--claude-compat` · `--dry-run` · `--no-input` · `--yes` ·
 `--allow-brew` · `--force`. With `--no-input` and no `--yes`/`--with`, no language coder is installed and the command to
 run is printed.

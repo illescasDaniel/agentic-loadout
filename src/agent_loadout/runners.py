@@ -23,8 +23,8 @@ def agemem_command(opts: Options) -> list[str]:
     return [*cmd, "--no-input"]
 
 
-def skills_command(opts: Options) -> list[str]:
-    cmd = ["npx", "-y", pins.SKILLS, "add", f"{pins.SDD_SKILL}#{pins.SDD_SKILL_REF}"]
+def skills_command(opts: Options, repo: str = pins.SDD_SKILL, ref: str = pins.SDD_SKILL_REF) -> list[str]:
+    cmd = ["npx", "-y", pins.SKILLS, "add", f"{repo}#{ref}"]
     for tool in opts.selected():
         cmd += ["-a", SKILLS_AGENT_NAMES[tool]]
     # --copy: no symlink may point outside the project. Never -g (global).
