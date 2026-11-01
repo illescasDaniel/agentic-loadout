@@ -75,6 +75,14 @@ Every brief must be self-contained:
 
 Never write "as discussed" or "based on the findings above".
 
+Keep facts and guesses apart:
+- Your own diagnosis or theory goes in as a labelled hypothesis, not as fact. After two failed fixes, give `architect`
+  the symptoms and the failed attempts as data, not your conclusion.
+- Briefing `code-grader` or any checker: never state the expected verdict or word the task so only PASS fits. Give the
+  spec path and diff base, not your summary of what was done.
+- When chaining (plan → `coder`, FAIL → `coder`), pass the upstream output verbatim and say what to do with it
+  ("implement step 3 of this plan; flag any step that contradicts the code").
+
 Say what to achieve, not how to search or edit. Don't tell a subagent to grep, sed or read specific files to find
 code ("grep the repo for X"): that overrides its own tools, including the project's code-navigation MCPs. Name the
 symbol or behaviour and let the subagent pick its tools.
