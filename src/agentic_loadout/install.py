@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import coders, git_state, pins
-from .agents import ASSETS, install_agents
+from .agents import ASSETS, install_agents, install_tier_agents
 from .brew import System
 from .files import Ctx, read_json, write_json
 from .instructions import Section, apply_sections
@@ -19,7 +19,7 @@ from .ui import Prompter
 from .vendors import VENDORS, workflow_path
 
 AGEMEM_WRITES = {"claude": [".mcp.json", ".claude/settings.json"], "cursor": [".cursor/mcp.json"],
-                 "codex": [".codex/config.toml", ".codex/hooks.json"]}  # checked in Phase 0 (PLAN.md §8a)
+                 "codex": [".codex/config.toml", ".codex/hooks.json"]}  # checked in Phase 0 (docs/original-implementation-plan.md §8a)
 AGEMEM_PERSONAL_WRITES = {**AGEMEM_WRITES, "claude": [".mcp.json", ".claude/settings.local.json"]}  # --local-settings
 SKILL_DIRS = {"claude": ".claude/skills", "cursor": ".agents/skills", "codex": ".agents/skills"}
 
@@ -114,6 +114,8 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
         sections = _rules(opts)
         if opts.wants("agents"):
             install_agents(ctx, opts.selected(), opts.wants("sdd"), opts.wants("agemem"))
+        if opts.wants("agents") or plan.keys:
+            install_tier_agents(ctx, opts.selected(), opts.wants("agemem"), opts.wants("agents"), True)
         sections += coders.install(ctx, opts, plan, system, opts.wants("agemem"))
         sections += _tail_rules(opts)
         apply_sections(ctx, opts.selected(), opts.personal_settings, sections, opts.claude_compat)
@@ -148,6 +150,7 @@ def _run_coders(opts: Options, requested: list[str] | None, list_only: bool, pro
         return 0
     before = git_state.snapshot(opts.project)
     try:
+        install_tier_agents(ctx, opts.selected(), memory, False, True)
         sections = coders.install(ctx, opts, plan, system, memory)
         apply_sections(ctx, opts.selected(), opts.personal_settings, sections, opts.claude_compat)
         ctx.apply()

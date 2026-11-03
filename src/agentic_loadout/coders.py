@@ -43,12 +43,14 @@ class Coder:
     @property
     def section(self) -> Section:
         paragraph = (
-            f"Any task that adds, changes, renames, moves or deletes {self.extensions} code goes to `{self.agent}`, not "
-            f"the generic `coder`: it uses the project's `{self.server_key}` MCP for type-checked navigation and "
-            f"refactoring. Keep `coder` for everything else, and split a task that spans languages."
+            f"Any task that adds, changes, renames, moves or deletes {self.extensions} code goes to "
+            f"`{self.agent}` or `{self.agent}-small`, using the project's `{self.server_key}` MCP for navigation. "
+            "Choose the tier for the task and developer preference. Split work spanning languages. "
+            "Read `.agents/delegation-tiers.md` for selection, briefing and independent review."
         )
-        return Section(self.agent, f"## {self.label} code goes to `{self.agent}`\n\n"
+        return Section(self.agent, f"## {self.label} code goes to `{self.agent}` or `{self.agent}-small`\n\n"
                        + textwrap.fill(paragraph, width=120, break_on_hyphens=False))
+
 
 
 PYTHON_TOOLS = (
@@ -137,7 +139,7 @@ def parse_languages(values: list[str]) -> list[str]:
     return [k for k in CODERS if k in names]
 
 
-def agent_bytes(coder: Coder, memory: bool) -> bytes:
+def agent_bytes(coder: Coder, memory: bool, small: bool = False) -> bytes:
     """The coder's agent file (Claude format): generic `coder.md` + the language's navigation section + MCP tools."""
     fields, body = _split((ASSETS / "agents" / "coder.md").read_text(encoding="utf-8"))
     builtin = ("Read", "Edit", "Write", "Glob", "Grep", "Bash")
@@ -145,12 +147,18 @@ def agent_bytes(coder: Coder, memory: bool) -> bytes:
     tools = ", ".join((*builtin, *recall, *(f"mcp__{coder.server_key}__{t}" for t in coder.tools)))
     fields = {k: v for k, v in fields.items() if k not in ("name", "description", "disallowedTools")}
     fields["tools"] = tools
-    head = f"name: {coder.agent}\ndescription: {json.dumps(coder.description, ensure_ascii=False)}\n"
+    name = coder.agent + ("-small" if small else "")
+    description = coder.description if not small else f"Small-model {coder.label} coder for bounded work; uses the {coder.server_key} navigation MCP and requires independent review."
+    if small:
+        fields.update(model="haiku", effort="high")
+    head = f"name: {name}\ndescription: {json.dumps(description, ensure_ascii=False)}\n"
     head += yaml.safe_dump(fields, sort_keys=False, allow_unicode=True, width=120)
     section = (ASSETS / "templates" / "coders" / coder.fragment).read_text(encoding="utf-8").strip()
     body, count = re.subn(r"\n## Rules", f"\n{section}\n\n## Rules", body, count=1)
     if count != 1:
         raise SystemExit("error: assets/agents/coder.md has no '## Rules' heading to put the navigation section before")
+    if small:
+        body += "\n" + (ASSETS / "agents" / "tiers" / "coder-small.supplement.md").read_text(encoding="utf-8")
     return ("---\n" + head + "---\n" + body).encode("utf-8")
 
 
@@ -194,6 +202,7 @@ def prepare(ctx: Ctx, opts: Options, prompter: Prompter, system: System, request
             current = status(ctx, coder, opts.selected())
             if current == "installed":
                 ctx.log("installed", coder.agent, f"({coder.server_key} MCP already set up)")
+                keys.append(key)  # Refresh managed routing and add missing tier agents on upgrade.
             elif prompter.confirm(f"Detected {coder.label}. Install `{coder.agent}` with the {coder.server_key} MCP?"):
                 keys.append(key)
         declined = [k for k in detected if k not in keys and status(ctx, CODERS[k], opts.selected()) != "installed"]
@@ -218,6 +227,7 @@ def install(ctx: Ctx, opts: Options, plan: CoderPlan, system: System, memory: bo
     for key in plan.keys:
         coder = CODERS[key]
         write_agent(ctx, tools, coder.agent, agent_bytes(coder, memory))
+        write_agent(ctx, tools, coder.agent + "-small", agent_bytes(coder, memory, small=True))
         for tool in tools:
             add_servers(ctx, tool, {coder.server_key: server_for(coder, tool, opts.project, system)})
         sections.append(coder.section)
@@ -234,8 +244,9 @@ def install(ctx: Ctx, opts: Options, plan: CoderPlan, system: System, memory: bo
 
 def list_coders(ctx: Ctx, opts: Options) -> str:
     detected = detect_languages(opts.project)
-    rows = [f"  {'language':<11} {'coder':<18} {'MCP':<14} {'detected':<9} state"]
+    rows = [f"  {'language':<11} {'coder':<18} {'MCP':<14} {'detected':<9} {'state':<10} small"]
     for key, coder in CODERS.items():
         rows.append(f"  {key:<11} {coder.agent:<18} {coder.server_key:<14} {'yes' if key in detected else 'no':<9} "
-                    f"{status(ctx, coder, opts.selected())}")
+                    f"{status(ctx, coder, opts.selected()):<10} "
+                    + ("installed" if all(ctx.exists(ctx.project / VENDORS[t].agents_dir / agent_filename(t, coder.agent + "-small")) for t in opts.selected()) else "missing"))
     return "\n".join(rows)

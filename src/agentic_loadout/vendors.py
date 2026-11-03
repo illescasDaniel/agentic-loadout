@@ -21,6 +21,15 @@ import yaml
 
 TOOLS = ("claude", "cursor", "codex")
 
+# Existing roles retain their current output; only new roles receive explicit models.
+CLIENT_MODELS = {
+    ("codex", "small"): ("gpt-6-luna", "high"),
+    ("codex", "reviewer"): ("gpt-6.1-terra", None),
+    ("cursor", "small"): ("gpt-6-luna", None),
+    ("cursor", "reviewer"): ("gpt-6.1-terra", None),
+}
+
+
 
 @dataclass(frozen=True)
 class Vendor:
@@ -116,9 +125,11 @@ def convert_agent(tool: str, source: bytes) -> bytes:
     fields, body = _split(source.decode("utf-8"))
     body = re.sub(r"`(?:CLAUDE|AGENTS)\.md` / `(?:AGENTS|CLAUDE)\.md`", "`AGENTS.md`", body)
     read_only = _is_read_only(fields)
+    role = "small" if fields["name"].endswith("-small") else "reviewer" if fields["name"] == "code-reviewer" else None
+    model, model_effort = CLIENT_MODELS.get((tool, role), (None, None))
     if tool == "cursor":
         head = [f"name: {fields['name']}", f"description: {json.dumps(fields['description'], ensure_ascii=False)}",
-                "model: inherit"]
+                f"model: {model or 'inherit'}"]
         if read_only:
             head.append("readonly: true")
         return ("---\n" + "\n".join(head) + "\n---\n" + body).encode("utf-8")
@@ -129,7 +140,11 @@ def convert_agent(tool: str, source: bytes) -> bytes:
         escaped = instructions.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
         lines = [f"name = {json.dumps(fields['name'])}",
                  f"description = {json.dumps(fields['description'], ensure_ascii=False)}"]
-        if fields.get("effort") in ("low", "medium", "high", "xhigh", "max"):
+        if model:
+            lines.append(f"model = {json.dumps(model)}")
+        if model_effort:
+            lines.append(f"model_reasoning_effort = {json.dumps(model_effort)}")
+        elif fields.get("effort") in ("low", "medium", "high", "xhigh", "max"):
             lines.append(f'model_reasoning_effort = "{"high" if fields["effort"] in ("xhigh", "max") else fields["effort"]}"')
         lines.append(f'developer_instructions = """\n{escaped}\n"""')
         return ("\n".join(lines) + "\n").encode("utf-8")

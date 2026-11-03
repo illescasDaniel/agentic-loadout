@@ -1,0 +1,15 @@
+{
+  ".agents/development-workflow.md": "539cc63d5ac77cee3687f9d5712fae87890ba67f0af9ab5fcb7e9cc0eef23fcf",
+  ".claude/agents/architect.md": "09eaf920aec962b408e0fd2d29d196fa7df94e218ad595a6abe98b62ae7d42a9",
+  ".claude/agents/coder-python.md": "ec46d706d14465e96ab1bb0ab4e23babf002b38c7d5fa51650ce0df5ac98ff47",
+  ".claude/agents/coder.md": "25a25604924272deb89f25ba41f6ee9a699190afe03d942daab20b3e870688bd",
+  ".claude/agents/utility.md": "178353cf235c0b3b0558bb260307c21bf39fa4889aa04d8d8b5f09355d22680d",
+  ".codex/agents/architect.toml": "aba543c877050877887a5a117621b0b2e17a236c855001f742ffc248e41fe66f",
+  ".codex/agents/coder-python.toml": "dff9675da9c9b030f720cd45b279f376c3c2f20d6b4e9916dc4f443103211c11",
+  ".codex/agents/coder.toml": "4cd3ed007a2adde9faf3cc38d3bc5389fb9be761ae948e08ae940ff4bef0949e",
+  ".codex/agents/utility.toml": "83a88981a9bfe3cb3017599e50ff33ae425ad23445cb3415cf1a2c62cc7045d7",
+  ".cursor/agents/architect.md": "5c66674674a53c962c93a9dc4bce7c33d2ae252925d390b322ad4c47b0824264",
+  ".cursor/agents/coder-python.md": "28023cb4fcbcc84700fce70b4674f4d3b6ffdcd107dfd4e73e2bf068557b2209",
+  ".cursor/agents/coder.md": "daba9f6b9a5fd9b72c828f45d067c3b2701a54c3d37c7250d504c1a2f789343a",
+  ".cursor/agents/utility.md": "515907299661d7f79f4d2f6cd3de9bcbad29ab46850445b368eca049b399d038"
+}

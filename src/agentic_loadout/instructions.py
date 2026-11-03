@@ -44,7 +44,7 @@ def is_import_stub(text: str) -> bool:
 
 
 def choose_targets(ctx: Ctx, tools: list[str], personal: bool) -> list[Path]:
-    """The file(s) the sections go to (rules in §4 of PLAN.md)."""
+    """The file(s) the sections go to (rules in §4 of docs/original-implementation-plan.md)."""
     agents_md, claude_md, local_md = (ctx.project / n for n in ("AGENTS.md", "CLAUDE.md", "CLAUDE.local.md"))
     others = [t for t in tools if t != "claude"]
     if personal and not others:

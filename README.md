@@ -83,6 +83,12 @@ merges, pushes or deletes without your yes. Leave it out with `--without worktre
 
 ### Language coders
 
+Each standard coder comes with a `-small` counterpart for bounded work and an independent `code-reviewer`. For example, use `coder-python-small` for a clearly specified Python change and `coder-python` for more complex work. Both use the same navigation MCP. When usage limits or parallel work are a concern, the orchestrator can suggest small coders and follow your preference. The reviewer checks the diff and complements the SDD final grade.
+
+Claude uses Haiku for small coders and Sonnet for the reviewer. Codex uses Luna and Terra for these new roles; existing roles keep their current settings. Cursor uses configured models but may fall back when a model is unavailable: check which model actually ran. Model availability varies by account. Edit a generated agent file to change its model; re-runs preserve that edit unless `--force` is used. Read-only reviewer instructions are a convention, not a sandbox boundary.
+
+Re-running an existing installation adds the small agents, reviewer and `.agents/delegation-tiers.md`. Re-running with components omitted does not remove previously installed files; use `trash` on unwanted generated agents and guidance manually after reviewing their paths.
+
 A coder is one unit: the `coder-<lang>` subagent, the language's navigation MCP and a routing rule. They are always
 installed together, because without the subagent's instructions the agent doesn't use the MCP.
 
@@ -121,4 +127,4 @@ The Jev key is never asked for here. Set `AGEMEM_JEV_API_KEY` or edit `~/.config
 uv run pytest
 ```
 
-The design and the decisions behind it are in [PLAN.md](PLAN.md). The real Homebrew path can only be checked on macOS.
+The design and the decisions behind it are in [original implementation plan](docs/original-implementation-plan.md). The real Homebrew path can only be checked on macOS.

@@ -45,7 +45,7 @@ def prompter(*answers, **kw):
 
 
 class FakeExecutor:
-    """Stands in for uvx / npx: records the command and writes the files the real tool would (Phase 0, PLAN.md §8a)."""
+    """Stands in for uvx / npx: records the command and writes the files the real tool would (Phase 0, docs/original-implementation-plan.md §8a)."""
 
     def __init__(self):
         self.calls = []

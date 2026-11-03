@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.0] - 2026-11-03
+
+- Install small-model coder variants and an independent reviewer alongside standard coders, with shared language navigation and delegation guidance.
+- Existing installations gain the new files on re-run. Customized generated files are preserved unless `--force` is used; omitted components are not deleted. Model availability and Cursor fallback depend on the account.
+
 ## [0.2.1] - 2026-10-29
 
 - Requires agemem 0.2.1, which makes the shared memory store safe when several worktrees or processes write at once.

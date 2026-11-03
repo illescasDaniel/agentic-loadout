@@ -74,3 +74,21 @@ def install_agents(ctx: Ctx, tools: list[str], sdd: bool, memory: bool) -> None:
             write_agent(ctx, tools, "code-grader", grader)
     workflow = (ASSETS / "development-workflow.md").read_text(encoding="utf-8")
     write_bytes(ctx, ctx.project / workflow_path(tools), workflow.encode("utf-8"))
+
+
+def install_tier_agents(ctx: Ctx, tools: list[str], memory: bool, generic: bool, reviewer: bool) -> None:
+    """Install shared tier guidance and the agents required by installed coders."""
+    if generic:
+        fields, body = _split((ASSETS / "agents" / "coder.md").read_text(encoding="utf-8"))
+        fields.update(name="coder-small", description="Small-model implementation engineer for bounded, well-specified work.",
+                      model="haiku", effort="high")
+        supplement = (ASSETS / "agents" / "tiers" / "coder-small.supplement.md").read_text(encoding="utf-8")
+        source = "---\n" + yaml.safe_dump(fields, sort_keys=False, allow_unicode=True) + "---\n" + body + "\n" + supplement
+        write_agent(ctx, tools, "coder-small", (source if memory else without_memory(source)).encode())
+    if reviewer:
+        source = (ASSETS / "agents" / "tiers" / "code-reviewer.md").read_text(encoding="utf-8")
+        write_agent(ctx, tools, "code-reviewer", (source if memory else without_memory(source)).encode())
+        write_bytes(ctx, ctx.project / ".agents/delegation-tiers.md",
+                    (ASSETS / "templates" / "small-delegation.md").read_bytes())
+        ctx.note("Small coders and an independent reviewer are available; model access varies by client and account. "
+                 "Cursor may fall back to a different model; verify the model used.")
