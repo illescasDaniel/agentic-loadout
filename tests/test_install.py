@@ -115,6 +115,41 @@ def test_given_rerun_then_nothing_changes(repo):
     assert {p: p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git" not in p.relative_to(repo).parts} == snapshot
 
 
+def test_existing_memory_provider_is_preserved_without_a_prompt(repo):
+    memory = repo / ".agemem"
+    memory.mkdir()
+    config = memory / "config.json"
+    original = '{"decision_backend":"cascade","project_id":"existing"}\n'
+    config.write_text(original)
+    opts = Options(project=repo, tools=["codex"], without=frozenset({"sdd", "worktree", "agents", "coders", "entire"}))
+    prompt = prompter()
+    executor = FakeExecutor()
+    output = []
+    assert install.run_install(opts, prompt, make_system()[0], executor, output.append) == 0
+    assert not prompt.asked
+    assert "--model" not in executor.calls[0][0]
+    assert config.read_text() == original
+    assert "Preserved the existing Agemem provider" in "\n".join(output)
+
+
+def test_existing_memory_can_follow_user_provider_without_forcing_jev(repo):
+    (repo / ".agemem").mkdir()
+    (repo / ".agemem/config.json").write_text('{"project_id":"existing"}\n')
+    opts = Options(project=repo, tools=["codex"], no_input=True, without=frozenset({"sdd", "worktree", "agents", "coders", "entire"}))
+    executor = FakeExecutor()
+    assert install.run_install(opts, prompter(no_input=True), make_system()[0], executor) == 0
+    assert "--model" not in executor.calls[0][0]
+
+
+def test_explicit_conflicting_memory_model_fails_before_writes(repo):
+    (repo / ".agemem").mkdir()
+    (repo / ".agemem/config.json").write_text('{"decision_backend":"cascade"}\n')
+    executor = FakeExecutor()
+    code, out = full(repo, executor=executor)
+    assert code == 1 and "conflicts" in out and "leave out --memory-model" in out
+    assert executor.calls == []
+
+
 def run_coders(repo, requested, tools=("claude",), system=None, answers=(), **kw):
     out = []
     opts = Options(project=repo, tools=list(tools), **kw)

@@ -142,6 +142,10 @@ run is printed.
 
 The Jev key is never asked for here. Set `AGEMEM_JEV_API_KEY` or edit `~/.config/agemem/config.yaml`.
 
+When re-running in an existing Agemem project, leave out `--memory-model` to preserve its configured provider,
+including `cascade` (QSIV with Jev fallback), and avoid repeating provider setup. An explicit `--memory-model` that
+conflicts with the project's configured provider is rejected before installation; change provider settings separately.
+
 ## Development
 
 ```bash

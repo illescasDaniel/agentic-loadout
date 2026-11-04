@@ -35,7 +35,7 @@ def main_parser() -> argparse.ArgumentParser:
     _common(p)
     p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: python,swift,typescript or all (default: detect and confirm)")
     p.add_argument("--without", metavar="PARTS", help=f"leave parts out: {','.join(COMPONENTS)}")
-    p.add_argument("--memory-model", choices=("jev", "qsiv"), help="agemem decision provider (default: ask; jev with --no-input)")
+    p.add_argument("--memory-model", choices=("jev", "qsiv"), help="agemem provider for new setup (existing projects keep their provider when omitted)")
     p.add_argument("--no-hooks", action="store_true", help="skip agemem hooks and Entire checkpoint capture")
     p.add_argument("--entire-upload-sessions", action="store_true", help="explicitly enable Entire checkpoint uploads; transcripts may be public")
     p.add_argument("--model", help="Claude project model alias for .claude/settings.json (settings.local.json with --personal-settings)")

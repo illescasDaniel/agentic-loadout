@@ -86,7 +86,8 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
                 out: Callable[[str], None] = print) -> int:
     system = system or System()
     ctx = Ctx(opts.project, dry_run=opts.dry_run, force=opts.force)
-    if opts.wants("agemem") and opts.memory_model is None:
+    existing_memory = (opts.project / ".agemem/config.json").is_file()
+    if opts.wants("agemem") and opts.memory_model is None and not existing_memory:
         opts.memory_model = prompter.ask("Agemem decision provider (jev needs an API key later, qsiv runs locally)", ("jev", "qsiv"), "jev")
     # Preflight: ask every question and check every tool before the first write.
     plan = coders.prepare(ctx, opts, prompter, system, opts.with_coders)
@@ -105,6 +106,8 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
             if opts.memory_model == "jev":
                 ctx.note("Memory with the jev provider needs an API key: set AGEMEM_JEV_API_KEY in your environment or "
                          "put it in ~/.config/agemem/config.yaml (agemem created that file). Never paste it into a chat.")
+            elif opts.memory_model is None:
+                ctx.note("Preserved the existing Agemem provider configuration.")
         if opts.wants("sdd"):
             run(skills_command(opts), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.SDD_SKILL_NAME), opts.selected(), 'skills-lock.json')}")

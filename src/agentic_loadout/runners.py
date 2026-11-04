@@ -16,8 +16,9 @@ Executor = Callable[[Sequence[str], Path, dict[str, str]], subprocess.CompletedP
 
 
 def agemem_command(opts: Options) -> list[str]:
-    cmd = ["uvx", "--python", pins.AGEMEM_PYTHON, pins.AGEMEM, "project", "init", "--mcp", *opts.selected(),
-           "--model", opts.memory_model or "jev"]
+    cmd = ["uvx", "--python", pins.AGEMEM_PYTHON, pins.AGEMEM, "project", "init", "--mcp", *opts.selected()]
+    if opts.memory_model is not None:
+        cmd += ["--model", opts.memory_model]
     if opts.no_hooks:
         cmd.append("--no-hooks")
     if opts.personal_settings:
