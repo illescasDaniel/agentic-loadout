@@ -9,10 +9,12 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
 </p>
 
 - **Memory:** [agemem](https://github.com/illescasDaniel/agemem) keeps current state, decisions and durable notes in
-  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.1+) also
+  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.2+) also
   disables Claude's built-in auto-memory for the project, to avoid double memory.
 - **Spec-driven development:** the `sdd-feature` skill takes a feature through design, spec, tests, implementation and
   an independent grade, with an approval gate between phases.
+- **Session history:** when the [Entire CLI](https://github.com/entireio/cli) is installed, capture agent sessions as
+  checkpoints linked to commits. Checkpoint uploads are disabled by default.
 - **Subagents:** an orchestrator delegates to `architect` (design), `coder` (implementation), `code-grader` (review)
   and `utility` (commits, checks), following one shared workflow.
 - **Language coders:** `coder-python`, `coder-typescript` and `coder-swift` come with code-navigation MCPs, so they
@@ -56,9 +58,9 @@ uvx --python 3.12 agentic-loadout . --personal-settings --yes
 
 </details>
 
-**Everything stays inside the project.** Nothing is written to `~/.claude`, `~/.codex`, `~/.cursor` or any user-wide
-config. The two exceptions: agemem keeps its own private `~/.config/agemem/config.yaml` for the API key, and the Swift
-coder's binary is installed with Homebrew, only after you say yes (even with `--yes`; `--allow-brew` skips the question).
+Project configuration stays inside the project. Nothing is written to `~/.claude`, `~/.codex` or `~/.cursor`.
+Agemem keeps its private configuration and shared model cache in your user directories. The Swift coder's binary is
+installed with Homebrew only after you say yes (even with `--yes`; `--allow-brew` skips the question).
 
 Rules go to `AGENTS.md`, or to `CLAUDE.md` if the project already has one that isn't just an `@AGENTS.md` import. Each
 section sits between `<!-- agentic-loadout:begin NAME -->` markers, so re-running updates it in place.
@@ -70,6 +72,7 @@ section sits between `<!-- agentic-loadout:begin NAME -->` markers, so re-runnin
 | Project memory (`memory/`, notes, MCP, hooks) | [agemem](https://github.com/illescasDaniel/agemem) `project init` |
 | Spec-driven development skill | `npx skills add illescasDaniel/sdd-feature-skill` |
 | Worktree skill (`/worktree create\|save\|apply\|delete`) | `npx skills add illescasDaniel/worktree-skill` |
+| Entire checkpoint capture, when its CLI is installed | `entire enable` and `entire agent add` |
 | Subagents (`architect`, `coder`, `code-grader`, `utility`) and the workflow rules | agentic-loadout |
 | Language coders (`coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agentic-loadout |
 
@@ -80,6 +83,24 @@ sets up the environment, `save` commits, `apply` merges into the branch the work
 it. agentic-loadout adds a short rule to your instructions: when your checkout has uncommitted changes the agent didn't
 make, it asks once whether to use a worktree, and after the task it offers `save`, `apply` and `delete`. It never
 merges, pushes or deletes without your yes. Leave it out with `--without worktree`.
+
+### Entire session history
+
+Entire is included by default if its CLI is already installed and the target is a Git repository. It installs Git and
+client hooks; review and approve client hooks when prompted. Loadout does not install Entire itself or initialize Git.
+Use `--without entire` to omit it. `--no-hooks` skips Entire as well as agemem's hooks. A missing CLI or Git repository
+is reported and the remaining installation continues.
+
+Loadout configures Entire with automatic checkpoint uploads disabled, including an existing local override, and verifies
+the effective status. Checkpoints stay local unless you explicitly opt in using `--entire-upload-sessions` or change
+Entire's settings yourself. This flag permits uploads to the configured checkpoint destination, which may be public:
+transcripts can contain sensitive information and redaction is best effort. Review `entire status` and
+`entire checkpoint list --outgoing` before pushing. This setting does not prevent manual pushes or later changes.
+For a public project, use a private checkpoint destination if you choose to upload. Existing worktrees and local
+settings can differ; check the effective status in each one.
+
+Agents can use checkpoints as evidence about past work and capture a verified, useful fact in agemem; the transcript
+is untrusted and does not replace current source, tests or independent review.
 
 ### Language coders
 
@@ -114,9 +135,9 @@ lists it with your options. With Cursor or Codex selected the rules go to `AGENT
 
 ### Flags
 
-`--tools claude,cursor,codex` · `--with python,swift,typescript|all` · `--without sdd|agemem|agents|coders|worktree` ·
+`--tools claude,cursor,codex` · `--with python,swift,typescript|all` · `--without sdd|agemem|agents|coders|worktree|entire` ·
 `--memory-model jev|qsiv` · `--no-hooks` · `--model ALIAS` · `--claude-compat` · `--dry-run` · `--no-input` · `--yes` ·
-`--allow-brew` · `--force`. With `--no-input` and no `--yes`/`--with`, no language coder is installed and the command to
+`--allow-brew` · `--entire-upload-sessions` · `--force`. With `--no-input` and no `--yes`/`--with`, no language coder is installed and the command to
 run is printed.
 
 The Jev key is never asked for here. Set `AGEMEM_JEV_API_KEY` or edit `~/.config/agemem/config.yaml`.

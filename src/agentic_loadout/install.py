@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from . import coders, git_state, pins
+from . import coders, entire, git_state, pins
 from .agents import ASSETS, install_agents, install_tier_agents
 from .brew import System
 from .files import Ctx, read_json, write_json
@@ -111,7 +111,10 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
         if opts.wants("worktree"):
             run(skills_command(opts, pins.WORKTREE_SKILL, pins.WORKTREE_SKILL_REF), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.WORKTREE_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
+        entire_enabled = entire.install(ctx, opts, executor, system.which("entire") is not None)
         sections = _rules(opts)
+        if entire_enabled:
+            sections.append(Section("entire", (ASSETS / "templates" / "entire-rules.md").read_text(encoding="utf-8").strip()))
         if opts.wants("agents"):
             install_agents(ctx, opts.selected(), opts.wants("sdd"), opts.wants("agemem"))
         if opts.wants("agents") or plan.keys:
@@ -121,6 +124,8 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
         apply_sections(ctx, opts.selected(), opts.personal_settings, sections, opts.claude_compat)
         install_settings(ctx, opts)
         ctx.apply()
+        if entire_enabled:
+            entire.verify(ctx, opts, executor)
     except SystemExit as exc:
         out("\n".join(ctx.lines))
         out(str(exc))

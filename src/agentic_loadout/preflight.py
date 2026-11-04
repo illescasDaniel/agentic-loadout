@@ -18,6 +18,8 @@ def check(opts: Options, coder_keys: list[str], which: Callable[[str], str | Non
         problems.append("`npx` not found (needed for the sdd and worktree skills and the TypeScript coder). Install Node.js 20+.")
     if opts.memory_model not in (None, "jev", "qsiv"):
         problems.append(f"--memory-model must be jev or qsiv (got {opts.memory_model!r})")
+    if opts.entire_upload_sessions and (not opts.wants("entire") or opts.no_hooks):
+        problems.append("--entire-upload-sessions requires Entire and hooks")
     if not opts.project.is_dir():
         problems.append(f"{opts.project} is not a directory")
     return problems
