@@ -24,16 +24,17 @@ def migrate_legacy_go_server(ctx: Ctx, tool: str, server: dict) -> None:
         existing = _parse_toml(path, text).get("mcp_servers", {}).get("codenav-go", {})
         if not isinstance(existing, dict) or existing.get("command") != LEGACY_GO_BINARY or "args" in existing:
             return
-        pattern = r'(?ms)^\[mcp_servers\.codenav-go\][ \t]*\n(.*?)(?=^\[|\Z)'
+        pattern = r'(?ms)^\[mcp_servers\.codenav-go\][ \t]*\r?\n(.*?)(?=^\[|\Z)'
         match = re.search(pattern, text)
         if not match:
             ctx.warn(f"{path}: old Go MCP launcher was not migrated; update it manually.")
             return
         block = match.group(0)
-        old_line = r'(?m)^command\s*=\s*' + re.escape(json.dumps(LEGACY_GO_BINARY)) + r'[ \t]*$'
-        replacement = 'command = "go"\nargs = ' + json.dumps(server["args"])
+        newline = "\r\n" if "\r\n" in block else "\n"
+        old_line = r'(?m)^command[ \t]*=[ \t]*' + re.escape(json.dumps(LEGACY_GO_BINARY)) + r'[ \t]*(?=\r?$)'
+        replacement = 'command = "go"' + newline + 'args = ' + json.dumps(server["args"])
         if "startup_timeout_sec" not in existing and "startup_timeout_ms" not in existing:
-            replacement += f'\nstartup_timeout_sec = {server["startup_timeout_sec"]}'
+            replacement += newline + f'startup_timeout_sec = {server["startup_timeout_sec"]}'
         updated, count = re.subn(old_line, lambda _: replacement, block, count=1)
         if count != 1:
             ctx.warn(f"{path}: old Go MCP launcher was not migrated; update it manually.")

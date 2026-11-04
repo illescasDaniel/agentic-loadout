@@ -141,6 +141,22 @@ def test_go_rerun_preserves_custom_mcp_launcher(repo, go_available):
     assert json.loads((repo / ".mcp.json").read_text())["mcpServers"]["codenav-go"] == {"command": "/custom/go-server"}
 
 
+def test_go_migration_preserves_windows_line_endings(repo, go_available):
+    from agentic_loadout.mcp_config import LEGACY_GO_BINARY
+
+    (repo / ".codex").mkdir()
+    path = repo / ".codex/config.toml"
+    path.write_bytes((f'[mcp_servers.codenav-go]\r\ncommand = "{LEGACY_GO_BINARY}"\r\n'
+                      'env = { CODENAV_GO_MCP_BUILD_FLAGS = "-tags=gtk3" }\r\n').encode())
+    code, output = run_coders(repo, ["go"], tools=("codex",))
+    assert code == 0, output
+    data = path.read_bytes()
+    assert b'command = "go"\r\nargs = [' in data
+    assert b"\n" not in data.replace(b"\r\n", b"")
+    server = tomllib.loads(data.decode())["mcp_servers"]["codenav-go"]
+    assert server["env"]["CODENAV_GO_MCP_BUILD_FLAGS"] == "-tags=gtk3"
+
+
 @pytest.mark.parametrize("timeout", ["startup_timeout_sec = 90", "startup_timeout_ms = 90000"])
 def test_go_migration_preserves_custom_codex_startup_timeout(repo, timeout, go_available):
     from agentic_loadout.mcp_config import LEGACY_GO_BINARY
