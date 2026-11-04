@@ -25,7 +25,7 @@ Each piece is handed to the tool that already installs it; agentic-loadout only 
 Needs `uv` (agemem, Python coder), Node.js 20+ (skills, TypeScript coder), and Go with gopls for the Go coder.
 
 `--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. To pin the loadout
-version, run `uvx --python 3.12 agentic-loadout@0.4.0 .`; individual dependencies may have their own version policy.
+version, run `uvx --python 3.12 agentic-loadout@0.5.0 .`; individual dependencies may have their own version policy.
 
 ## Use
 
@@ -46,7 +46,10 @@ uvx --python 3.12 agentic-loadout . --personal-settings --yes
 > sdd|agemem|agents|coders|worktree|entire`), which language coders it detected (`--with go,python,swift,typescript`), the memory
 > provider (`--memory-model jev|qsiv`), and anything that contradicts the project's current rules or setup. Never
 > overwrite or move my existing rules; resolve conflicts with me, and ask before using `--force`. Ask me before it runs
-> Homebrew for the Swift coder. Then run the real install, review the resulting diff, warnings and next steps, adapt
+> Homebrew for the Swift coder. If the Entire CLI is missing, recommend installing it: it links agent session history
+> to Git commits as checkpoints, giving agents useful context alongside agemem's project memory. It works with an
+> existing Git repository; the project does not need to be hosted on Entire. Keep checkpoint uploads disabled unless
+> I explicitly opt in. Then run the real install, review the resulting diff, warnings and next steps, adapt
 > the generated sections (quality-gate command, layering, conventions, how to set up the environment in a new
 > worktree) to this project, and tell me what is left for me to do, such as restarting the client and approving the new
 > MCP servers and hooks. If memory uses the jev provider, tell me where the API key goes; never ask me to paste it into
