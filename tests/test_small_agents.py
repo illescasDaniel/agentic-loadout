@@ -33,6 +33,17 @@ def test_install_tiers_for_all_clients_and_preserve_customizations(repo):
     assert code == 0 and custom.read_text() != "custom\n"
 
 
+def test_all_small_coders_set_high_effort(repo):
+    code, output = full(repo, tools=("claude", "codex"), with_coders=["python", "typescript", "swift"],
+                        without=frozenset({"agemem", "sdd", "worktree"}))
+    assert code == 0, output
+    for name in ("coder-small", "coder-python-small", "coder-typescript-small", "coder-swift-small"):
+        claude = yaml.safe_load((repo / f".claude/agents/{name}.md").read_text().split("---", 2)[1])
+        codex = tomllib.loads((repo / f".codex/agents/{name}.toml").read_text())
+        assert (claude["model"], claude["effort"]) == ("haiku", "high")
+        assert (codex["model"], codex["model_reasoning_effort"]) == ("gpt-6-luna", "high")
+
+
 def test_standalone_coder_and_without_agents(repo):
     code, output = run_coders(repo, ["python"])
     assert code == 0, output
