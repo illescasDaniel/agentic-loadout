@@ -1,10 +1,22 @@
 import json
+import shutil
 import tomllib
 
 import pytest
 import yaml
 
 from tests.test_install import full, run_coders
+
+
+@pytest.fixture
+def go_available(monkeypatch):
+    """Configuration tests do not require an actual Go toolchain on the runner."""
+    from agentic_loadout import install, preflight
+
+    def check_with_go(opts, coder_keys):
+        return preflight.check(opts, coder_keys, which=lambda name: "/test/go" if name == "go" else shutil.which(name))
+
+    monkeypatch.setattr(install, "check", check_with_go)
 
 
 def test_install_tiers_for_all_clients_and_preserve_customizations(repo):
@@ -76,7 +88,7 @@ def test_existing_agent_outputs_match_baseline(repo):
         assert hashlib.sha256((repo / path).read_bytes()).hexdigest() == digest, path
 
 
-def test_go_coder_installs_both_tiers_and_navigation_for_all_clients(repo):
+def test_go_coder_installs_both_tiers_and_navigation_for_all_clients(repo, go_available):
     from agentic_loadout import pins
 
     code, output = run_coders(repo, ["go"], tools=("claude", "cursor", "codex"))
@@ -96,7 +108,7 @@ def test_go_coder_installs_both_tiers_and_navigation_for_all_clients(repo):
     assert "downloads the public MCP" in output
 
 
-def test_go_rerun_migrates_only_the_wip_launcher_and_preserves_environment(repo):
+def test_go_rerun_migrates_only_the_wip_launcher_and_preserves_environment(repo, go_available):
     from agentic_loadout import pins
     from agentic_loadout.mcp_config import LEGACY_GO_BINARY
 
@@ -122,7 +134,7 @@ def test_go_rerun_migrates_only_the_wip_launcher_and_preserves_environment(repo)
     assert code == 0 and "migrated WIP" not in output
 
 
-def test_go_rerun_preserves_custom_mcp_launcher(repo):
+def test_go_rerun_preserves_custom_mcp_launcher(repo, go_available):
     (repo / ".mcp.json").write_text(json.dumps({"mcpServers": {"codenav-go": {"command": "/custom/go-server"}}}))
     code, output = run_coders(repo, ["go"])
     assert code == 0, output
@@ -130,7 +142,7 @@ def test_go_rerun_preserves_custom_mcp_launcher(repo):
 
 
 @pytest.mark.parametrize("timeout", ["startup_timeout_sec = 90", "startup_timeout_ms = 90000"])
-def test_go_migration_preserves_custom_codex_startup_timeout(repo, timeout):
+def test_go_migration_preserves_custom_codex_startup_timeout(repo, timeout, go_available):
     from agentic_loadout.mcp_config import LEGACY_GO_BINARY
 
     (repo / ".codex").mkdir()
