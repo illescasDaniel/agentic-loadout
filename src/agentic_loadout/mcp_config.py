@@ -3,11 +3,55 @@
 
 from __future__ import annotations
 
+import json
+import re
 import tomllib
 from pathlib import Path
 
 from .files import Ctx, read_json, write_json
 from .vendors import VENDORS, codex_server_block, cursor_server
+
+LEGACY_GO_BINARY = "/home/daniel/Projects/Code/MCPs/codenav-go-mcp/codenav-go-mcp"
+
+
+def migrate_legacy_go_server(ctx: Ctx, tool: str, server: dict) -> None:
+    """Replace only the exact WIP launcher we previously generated; preserve user settings."""
+    path = ctx.project / VENDORS[tool].mcp_file
+    if not ctx.exists(path):
+        return
+    if tool == "codex":
+        text = ctx.read(path).decode("utf-8")
+        existing = _parse_toml(path, text).get("mcp_servers", {}).get("codenav-go", {})
+        if not isinstance(existing, dict) or existing.get("command") != LEGACY_GO_BINARY or "args" in existing:
+            return
+        pattern = r'(?ms)^\[mcp_servers\.codenav-go\][ \t]*\r?\n(.*?)(?=^\[|\Z)'
+        match = re.search(pattern, text)
+        if not match:
+            ctx.warn(f"{path}: old Go MCP launcher was not migrated; update it manually.")
+            return
+        block = match.group(0)
+        newline = "\r\n" if "\r\n" in block else "\n"
+        old_line = r'(?m)^command[ \t]*=[ \t]*' + re.escape(json.dumps(LEGACY_GO_BINARY)) + r'[ \t]*(?=\r?$)'
+        replacement = 'command = "go"' + newline + 'args = ' + json.dumps(server["args"])
+        if "startup_timeout_sec" not in existing and "startup_timeout_ms" not in existing:
+            replacement += newline + f'startup_timeout_sec = {server["startup_timeout_sec"]}'
+        updated, count = re.subn(old_line, lambda _: replacement, block, count=1)
+        if count != 1:
+            ctx.warn(f"{path}: old Go MCP launcher was not migrated; update it manually.")
+            return
+        text = text[:match.start()] + updated + text[match.end():]
+        _parse_toml(path, text)
+        ctx.write(path, text.encode("utf-8"))
+        ctx.log(ctx.verb(path), path, "migrated WIP Go MCP launcher")
+        return
+    data, indent = read_json(path, ctx)
+    servers = data.get("mcpServers", {})
+    existing = servers.get("codenav-go", {}) if isinstance(servers, dict) else {}
+    if not isinstance(existing, dict) or existing.get("command") != LEGACY_GO_BINARY or "args" in existing:
+        return
+    existing["command"] = server["command"]
+    existing["args"] = list(server["args"])
+    write_json(ctx, path, data, indent, ["migrated WIP Go MCP launcher"])
 
 
 def servers_in(ctx: Ctx, tool: str) -> dict:

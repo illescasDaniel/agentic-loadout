@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0] - 2026-11-04
+
+- Add normal and small Go coders with codenav-go MCP navigation and Go module/workspace detection. The public MCP runs
+  through `go run ...@latest`; reruns migrate the previous WIP binary path while preserving environment settings.
+- Add optional Entire checkpoint capture and agent guidance, enabled when Entire is installed. Automatic transcript
+  uploads are disabled by default and require explicit opt-in.
+- Update agemem to 0.2.2 and preserve existing project provider settings, including QSIV-to-Jev cascade, on reruns.
+- Update the project image and installer prompt to explain how Entire complements agemem without requiring Entire hosting.
+
 ## [0.3.0] - 2026-11-03
 
 - Install small-model coder variants and an independent reviewer alongside standard coders, with shared language navigation and delegation guidance.

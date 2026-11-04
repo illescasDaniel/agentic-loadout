@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .vendors import TOOLS
 
-COMPONENTS = ("sdd", "agemem", "agents", "coders", "worktree")
+COMPONENTS = ("sdd", "agemem", "agents", "coders", "worktree", "entire")
 
 
 @dataclass
@@ -16,6 +16,7 @@ class Options:
     without: frozenset[str] = frozenset()
     memory_model: str | None = None
     no_hooks: bool = False
+    entire_upload_sessions: bool = False
     personal_settings: bool = False
     git_exclude: bool = False
     claude_compat: bool = False

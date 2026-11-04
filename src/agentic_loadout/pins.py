@@ -1,6 +1,6 @@
 """Every external version in one place, so a release updates one file."""
 
-AGEMEM = "agemem@0.2.1"  # 0.2.1+: safe concurrent writes across worktrees; 0.2.0+: path-free MCP and hook entries
+AGEMEM = "agemem@0.2.2"  # 0.2.2+: shared embedding model cache
 AGEMEM_PYTHON = "3.12"
 SKILLS = "skills@1.7.4"
 SDD_SKILL = "illescasDaniel/sdd-feature-skill"
@@ -11,5 +11,6 @@ WORKTREE_SKILL_REF = "37674c26b84eca9df37d8dafccc367da7455d079"
 WORKTREE_SKILL_NAME = "worktree"
 CODENAV_SPEC = "codenav-mcp>=0.2.1,<0.3"
 WEBNAV_SPEC = "webnav-ts-mcp@0.2"
+CODENAV_GO_SPEC = "github.com/illescasDaniel/codenav-go-mcp/cmd/codenav-go-mcp@latest"
 SWIFT_BREW_FORMULA = "illescasDaniel/tap/codenav-swift-mcp"
 XCODE_BUILD_SERVER_FORMULA = "xcode-build-server"

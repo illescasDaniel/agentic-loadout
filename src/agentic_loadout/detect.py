@@ -6,10 +6,11 @@ from __future__ import annotations
 from fnmatch import fnmatch
 from pathlib import Path
 
-SKIP_DIRS = {"node_modules", ".venv", "venv", "build", "dist", "Pods", ".git", "__pycache__", "site-packages", "DerivedData"}
+SKIP_DIRS = {"node_modules", "vendor", ".venv", "venv", "build", "dist", "Pods", ".git", "__pycache__", "site-packages", "DerivedData"}
 
 MARKERS = {  # language -> glob patterns on file or directory names
     "python": ("pyproject.toml", "setup.py", "setup.cfg", "requirements*.txt", "Pipfile", "uv.lock"),
+    "go": ("go.mod", "go.work"),
     "typescript": ("package.json", "tsconfig.json", "jsconfig.json", "deno.json"),
     "swift": ("Package.swift", "*.xcodeproj", "*.xcworkspace", "Podfile", "Cartfile"),
 }

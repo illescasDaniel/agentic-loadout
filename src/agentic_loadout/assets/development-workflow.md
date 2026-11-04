@@ -28,7 +28,7 @@ the user what needs their approval before starting anything else.
 |---|---|---|
 | `architect` | Opus | Hard thinking: design decisions, interfaces, plans, root causes. Read-only. |
 | `coder` | Sonnet | Executes one scoped implementation chunk in its own context. |
-| `coder-python`, `coder-swift`, `coder-typescript` | Sonnet | Optional. Same as `coder`, for that language, with its code-navigation MCP; use them instead of `coder` when the project has them. |
+| `coder-go`, `coder-python`, `coder-swift`, `coder-typescript` | Sonnet | Optional. Same as `coder`, for that language, with its code-navigation MCP; use them instead of `coder` when the project has them. |
 | `code-grader` | Opus | Independent read-only grade of finished work against its spec (SDD Phase 5). |
 | `utility` | Haiku | Mechanical: quality-gate runs, git, moves/renames, bulk edits. |
 
