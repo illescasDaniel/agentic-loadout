@@ -33,7 +33,7 @@ def main_parser() -> argparse.ArgumentParser:
                                 epilog="Run `agentic-loadout coders --help` to add language coders on their own.")
     p.add_argument("path", nargs="?", default=".", help="project root (default: .)")
     _common(p)
-    p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: python,swift,typescript or all (default: detect and confirm)")
+    p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: go,python,swift,typescript or all (default: detect and confirm)")
     p.add_argument("--without", metavar="PARTS", help=f"leave parts out: {','.join(COMPONENTS)}")
     p.add_argument("--memory-model", choices=("jev", "qsiv"), help="agemem provider for new setup (existing projects keep their provider when omitted)")
     p.add_argument("--no-hooks", action="store_true", help="skip agemem hooks and Entire checkpoint capture")
@@ -45,7 +45,7 @@ def main_parser() -> argparse.ArgumentParser:
 def coders_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="agentic-loadout coders", description="Install language coders: the coder-<lang> subagent, "
                                 "its code-navigation MCP and the routing rule, always together.")
-    p.add_argument("languages", nargs="*", help="python, swift, typescript or all (default: detect and confirm)")
+    p.add_argument("languages", nargs="*", help="go, python, swift, typescript or all (default: detect and confirm)")
     p.add_argument("--path", default=".", help="project root (default: .)")
     p.add_argument("--list", action="store_true", help="show the catalogue, what is detected and what is installed")
     _common(p)

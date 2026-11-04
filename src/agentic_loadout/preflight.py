@@ -17,6 +17,8 @@ def check(opts: Options, coder_keys: list[str], which: Callable[[str], str | Non
         problems.append("`uvx` not found (needed for agemem and the Python coder). Install uv: https://docs.astral.sh/uv/")
     if needs_npx and which("npx") is None:
         problems.append("`npx` not found (needed for the sdd and worktree skills and the TypeScript coder). Install Node.js 20+.")
+    if "go" in coder_keys and which("go") is None:
+        problems.append("`go` not found (needed to run the Go coder's codenav-go MCP). Install Go: https://go.dev/dl/")
     if opts.memory_model not in (None, "jev", "qsiv"):
         problems.append(f"--memory-model must be jev or qsiv (got {opts.memory_model!r})")
     config = opts.project / ".agemem/config.json"

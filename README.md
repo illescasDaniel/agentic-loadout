@@ -17,15 +17,15 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
   checkpoints linked to commits. Checkpoint uploads are disabled by default.
 - **Subagents:** an orchestrator delegates to `architect` (design), `coder` (implementation), `code-grader` (review)
   and `utility` (commits, checks), following one shared workflow.
-- **Language coders:** `coder-python`, `coder-typescript` and `coder-swift` come with code-navigation MCPs, so they
+- **Language coders:** `coder-go`, `coder-python`, `coder-typescript` and `coder-swift` come with code-navigation MCPs, so they
   rename and refactor through the compiler or type checker instead of `grep` and `sed`.
 
 Each piece is handed to the tool that already installs it; agentic-loadout only writes what no tool covers.
 
-Needs `uv` (agemem, Python coder) and Node.js 20+ (skill, TypeScript coder).
+Needs `uv` (agemem, Python coder), Node.js 20+ (skills, TypeScript coder), and Go with gopls for the Go coder.
 
-`--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. For a reproducible run,
-also pin the version: `uvx --python 3.12 agentic-loadout@0.1.0 .`
+`--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. To pin the loadout
+version, run `uvx --python 3.12 agentic-loadout@0.4.0 .`; individual dependencies may have their own version policy.
 
 ## Use
 
@@ -43,7 +43,7 @@ uvx --python 3.12 agentic-loadout . --personal-settings --yes
 > project's existing instructions, agents, skills, MCP config and settings (`AGENTS.md`, `CLAUDE.md`, `.claude/`,
 > `.cursor/`, `.codex/`, `.agents/`, `.mcp.json`). Run `uvx --python 3.12 agentic-loadout . --dry-run` and review the
 > plan with me: which clients to target (`--tools claude,cursor,codex`), which parts to leave out (`--without
-> sdd|agemem|agents|coders|worktree`), which language coders it detected (`--with python,swift,typescript`), the memory
+> sdd|agemem|agents|coders|worktree|entire`), which language coders it detected (`--with go,python,swift,typescript`), the memory
 > provider (`--memory-model jev|qsiv`), and anything that contradicts the project's current rules or setup. Never
 > overwrite or move my existing rules; resolve conflicts with me, and ask before using `--force`. Ask me before it runs
 > Homebrew for the Swift coder. Then run the real install, review the resulting diff, warnings and next steps, adapt
@@ -74,7 +74,7 @@ section sits between `<!-- agentic-loadout:begin NAME -->` markers, so re-runnin
 | Worktree skill (`/worktree create\|save\|apply\|delete`) | `npx skills add illescasDaniel/worktree-skill` |
 | Entire checkpoint capture, when its CLI is installed | `entire enable` and `entire agent add` |
 | Subagents (`architect`, `coder`, `code-grader`, `utility`) and the workflow rules | agentic-loadout |
-| Language coders (`coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agentic-loadout |
+| Language coders (`coder-go`, `coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agentic-loadout |
 
 ### Worktrees
 
@@ -85,6 +85,12 @@ make, it asks once whether to use a worktree, and after the task it offers `save
 merges, pushes or deletes without your yes. Leave it out with `--without worktree`.
 
 ### Entire session history
+
+Entire records agent sessions and connects captured work to Git commits with checkpoints. It gives an agent or reviewer
+historical context about the request, discussion and files behind a change. Agemem complements this with the current
+project state and selected durable facts and decisions: an agent can inspect a relevant checkpoint, verify a useful
+lesson against current sources, then capture it in agemem with provenance. Neither a transcript nor a memory note
+replaces the code, tests or an independent review.
 
 Entire is included by default if its CLI is already installed and the target is a Git repository. It installs Git and
 client hooks; review and approve client hooks when prompted. Loadout does not install Entire itself or initialize Git.
@@ -99,8 +105,9 @@ transcripts can contain sensitive information and redaction is best effort. Revi
 For a public project, use a private checkpoint destination if you choose to upload. Existing worktrees and local
 settings can differ; check the effective status in each one.
 
-Agents can use checkpoints as evidence about past work and capture a verified, useful fact in agemem; the transcript
-is untrusted and does not replace current source, tests or independent review.
+Loadout adds project instructions for using checkpoints as untrusted evidence; no separate Entire skill is required.
+Agents can use `entire agent-help` for the commands supported by the installed CLI. Session capture depends on the
+client hooks being active; it is not a guarantee that every action or subagent is recorded.
 
 ### Language coders
 
@@ -115,15 +122,22 @@ installed together, because without the subagent's instructions the agent doesn'
 
 ```bash
 uvx --python 3.12 agentic-loadout coders                    # detect languages, confirm, install
-uvx --python 3.12 agentic-loadout coders python typescript  # or name them (python, typescript, swift, all)
+uvx --python 3.12 agentic-loadout coders go typescript  # or name them (go, python, typescript, swift, all)
 uvx --python 3.12 agentic-loadout coders --list             # catalogue, what is detected, what is installed
 ```
 
 | Language | MCP | Detected by |
 |---|---|---|
+| go | codenav-go (Go and gopls required) | `go.mod`, `go.work` |
 | python | codenav | `pyproject.toml`, `setup.py`, `requirements*.txt`, `Pipfile`, `uv.lock` |
 | typescript | webnav | `package.json`, `tsconfig.json`, `jsconfig.json`, `deno.json` |
 | swift | codenav-swift (needs the Homebrew binary, macOS) | `Package.swift`, `*.xcodeproj`, `*.xcworkspace`, `Podfile` |
+
+The Go MCP runs via `go run github.com/illescasDaniel/codenav-go-mcp/cmd/codenav-go-mcp@latest`. Go fetches the public
+module when needed; `@latest` can select a newer release over time. Re-running the installer migrates the exact old WIP
+binary path to this launcher while retaining its environment settings; custom MCP launchers are left alone.
+Cursor's configuration sets the workspace explicitly. Projects with build tags should configure
+`CODENAV_GO_MCP_BUILD_FLAGS` for their build, so gopls sees the right files.
 
 ### Keeping it out of git
 
@@ -135,7 +149,7 @@ lists it with your options. With Cursor or Codex selected the rules go to `AGENT
 
 ### Flags
 
-`--tools claude,cursor,codex` · `--with python,swift,typescript|all` · `--without sdd|agemem|agents|coders|worktree|entire` ·
+`--tools claude,cursor,codex` · `--with go,python,swift,typescript|all` · `--without sdd|agemem|agents|coders|worktree|entire` ·
 `--memory-model jev|qsiv` · `--no-hooks` · `--model ALIAS` · `--claude-compat` · `--dry-run` · `--no-input` · `--yes` ·
 `--allow-brew` · `--entire-upload-sessions` · `--force`. With `--no-input` and no `--yes`/`--with`, no language coder is installed and the command to
 run is printed.

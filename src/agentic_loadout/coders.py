@@ -21,7 +21,7 @@ from .brew import BrewPlan, System, plan_swift, run_plan, swift_binary_path
 from .detect import detect_languages
 from .files import Ctx
 from .instructions import Section
-from .mcp_config import add_servers, servers_in
+from .mcp_config import add_servers, migrate_legacy_go_server, servers_in
 from .options import Options
 from .ui import Prompter
 from .vendors import VENDORS, _split, agent_filename
@@ -69,6 +69,11 @@ TYPESCRIPT_TOOLS = (
     "references", "diagnostics", "css_var", "selector", "edit", "edit_symbol", "rename_symbol", "move", "quick_fix",
     "verify_changes", "apply_edit", "undo_edit",
 )
+GO_TOOLS = (
+    "symbol_info", "outline", "callers", "implementations", "search_symbol", "workspace", "hover", "definition",
+    "references", "diagnostics", "edit", "edit_symbol", "rename_symbol", "change_signature", "move", "quick_fix",
+    "verify_changes", "apply_edit", "undo_edit",
+)
 
 CODERS = {
     c.key: c
@@ -89,6 +94,23 @@ CODERS = {
             tools=PYTHON_TOOLS,
             prerequisite="needs uv and Python 3.11+ (codenav-mcp runs through uvx).",
             fragment="python.md",
+        ),
+        Coder(
+            key="go",
+            agent="coder-go",
+            label="Go",
+            extensions="Go (`.go`)",
+            description=(
+                "Implementation engineer for Go code, backed by the codenav-go MCP (gopls navigation and "
+                "type-checked refactoring). Use INSTEAD of `coder` for tasks that add, change, rename, move or "
+                "delete Go code: an architect plan step, SDD Phase 3 tests or Phase 4 implementation, grader "
+                "fixes, or a bug with a known cause. Same contract as `coder`."
+            ),
+            server_key="codenav-go",
+            server={"type": "stdio", "command": "go", "args": ["run", pins.CODENAV_GO_SPEC]},
+            tools=GO_TOOLS,
+            prerequisite="needs Go and gopls; `go run` downloads the public MCP on first use.",
+            fragment="go.md",
         ),
         Coder(
             key="swift",
@@ -168,6 +190,10 @@ def server_for(coder: Coder, tool: str, project: Path, system: System) -> dict:
         server["env"] = {"CODENAV_MCP_SOURCE_ROOT": "src"}
     if coder.key == "swift" and tool == "cursor":
         server["command"] = swift_binary_path(system)
+    if coder.key == "go" and tool == "cursor":
+        server["env"] = {"CODENAV_GO_MCP_WORKSPACE": "${workspaceFolder}"}
+    if coder.key == "go" and tool == "codex":
+        server["startup_timeout_sec"] = 60  # First `go run` may download and compile the module.
     return server
 
 
@@ -196,7 +222,7 @@ def prepare(ctx: Ctx, opts: Options, prompter: Prompter, system: System, request
         keys = []
         detected = detect_languages(opts.project)
         if not detected:
-            ctx.log("coders", "-", "no Python, TypeScript or Swift project files found; name a language with `agentic-loadout coders <language>`")
+            ctx.log("coders", "-", "no Go, Python, TypeScript or Swift project files found; name a language with `agentic-loadout coders <language>`")
         for key in detected:
             coder = CODERS[key]
             current = status(ctx, coder, opts.selected())
@@ -229,6 +255,8 @@ def install(ctx: Ctx, opts: Options, plan: CoderPlan, system: System, memory: bo
         write_agent(ctx, tools, coder.agent, agent_bytes(coder, memory))
         write_agent(ctx, tools, coder.agent + "-small", agent_bytes(coder, memory, small=True))
         for tool in tools:
+            if key == "go":
+                migrate_legacy_go_server(ctx, tool, server_for(coder, tool, opts.project, system))
             add_servers(ctx, tool, {coder.server_key: server_for(coder, tool, opts.project, system)})
         sections.append(coder.section)
         ctx.note(f"{coder.agent}: {coder.prerequisite}")

@@ -1,5 +1,7 @@
 from agentic_loadout.brew import plan_swift, run_plan, swift_binary_path
 from agentic_loadout.detect import detect_languages
+from agentic_loadout.options import Options
+from agentic_loadout.preflight import check
 from tests.conftest import make_system, prompter
 
 
@@ -17,6 +19,25 @@ def test_given_vendored_dirs_then_they_are_ignored(tmp_path):
     (tmp_path / ".venv").mkdir()
     (tmp_path / ".venv/pyproject.toml").write_text("")
     assert detect_languages(tmp_path) == []
+
+
+def test_go_modules_and_workspaces_are_detected_but_vendor_is_ignored(tmp_path):
+    vendor = tmp_path / "vendor"
+    vendor.mkdir()
+    (vendor / "go.mod").write_text("module vendored\n")
+    assert "go" not in detect_languages(tmp_path)
+    (tmp_path / "go.work").write_text("go 1.24\n")
+    assert "go" in detect_languages(tmp_path)
+
+
+def test_go_mod_is_detected(tmp_path):
+    (tmp_path / "go.mod").write_text("module example.org/project\n")
+    assert "go" in detect_languages(tmp_path)
+
+
+def test_go_coder_requires_go_at_preflight(tmp_path):
+    opts = Options(project=tmp_path, without=frozenset({"agemem", "sdd", "worktree"}))
+    assert any("`go` not found" in message for message in check(opts, ["go"], which=lambda _: None))
 
 
 def test_given_linux_then_brew_is_not_offered(tmp_path):
