@@ -105,3 +105,8 @@ Delegation has a cost: a one-command task with short output, or an edit you can 
 Before ending a turn with unfinished work: `progress.md` checkboxes accurate; run `project_memory_index` if source or docs changed, `activeContext.md` names the exact next
 step (and the gate status). Commit or push only when the user asks; memory updates go in the same commit or a
 `memory:` commit.
+
+**Memory wrap-up:** when a task is finished, and before any push, suggest the `memory-wrapup` skill in one line and run
+it once the user agrees (it works agemem's pending queue: `project_memory_pending`, then resolve or dismiss each item
+once). Do it before delegating a commit to `utility`; subagents never write memory. For an ordinary commit, just bring
+`activeContext.md` and `progress.md` up to date. If the skill or the agemem tools are missing, skip it.

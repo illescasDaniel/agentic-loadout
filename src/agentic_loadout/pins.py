@@ -1,6 +1,6 @@
 """Every external version in one place, so a release updates one file."""
 
-AGEMEM = "agemem@0.2.2"  # 0.2.2+: shared embedding model cache
+AGEMEM = "agemem@0.3.0"  # 0.3.0: pending-queue tools (pending/resolve/dismiss), revised memory guidance
 AGEMEM_PYTHON = "3.12"
 SKILLS = "skills@1.7.4"
 SDD_SKILL = "illescasDaniel/sdd-feature-skill"
@@ -9,6 +9,9 @@ SDD_SKILL_NAME = "sdd-feature"
 WORKTREE_SKILL = "illescasDaniel/worktree-skill"
 WORKTREE_SKILL_REF = "37674c26b84eca9df37d8dafccc367da7455d079"
 WORKTREE_SKILL_NAME = "worktree"
+MEMORY_WRAPUP_SKILL = "illescasDaniel/agemem"  # monorepo: only the `memory-wrapup` skill is installed
+MEMORY_WRAPUP_SKILL_REF = "84f8f76959d64367ab52c334f671766a81dcb347"
+MEMORY_WRAPUP_SKILL_NAME = "memory-wrapup"
 CODENAV_SPEC = "codenav-mcp>=0.2.1,<0.3"
 WEBNAV_SPEC = "webnav-ts-mcp@0.2"
 CODENAV_GO_SPEC = "github.com/illescasDaniel/codenav-go-mcp/cmd/codenav-go-mcp@latest"

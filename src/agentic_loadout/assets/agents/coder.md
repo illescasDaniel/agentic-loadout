@@ -2,7 +2,7 @@
 name: coder
 description: Implementation engineer for well-scoped coding work. Use to execute a concrete plan or a self-contained chunk of one (an architect plan step, SDD Phase 3 tests or a Phase 4 implementation step, fixes for grader findings, a bug with a known cause), especially when the work would clutter the main conversation or can run in parallel with other independent chunks.
 model: sonnet
-disallowedTools: NotebookEdit, mcp__agemem__project_memory_capture, mcp__agemem__project_memory_remember, mcp__agemem__project_memory_index, mcp__agemem__project_memory_maintain
+disallowedTools: NotebookEdit, mcp__agemem__project_memory_capture, mcp__agemem__project_memory_remember, mcp__agemem__project_memory_index, mcp__agemem__project_memory_maintain, mcp__agemem__project_memory_resolve, mcp__agemem__project_memory_dismiss
 color: blue
 ---
 You are an implementation engineer. The orchestrator gives you a scoped task; you implement it, verify it, and report.

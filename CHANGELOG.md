@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0] - 2026-11-10
+
+- Update agemem to 0.3.0 and install its `memory-wrapup` skill (pinned, only that skill) whenever agemem is installed.
+  The skill works agemem's pending queue with `project_memory_pending`, `project_memory_resolve` and
+  `project_memory_dismiss`.
+- Refresh the memory rules section to agemem's revised guidance (what memory is for, confidence marks, `CONFLICT:`
+  lines, correcting stale notes, one topic file per parallel agent) and tell the main agent to suggest the wrap-up when a
+  task is finished and before a push, before handing a commit to a subagent. Re-running updates the section in place.
+- Subagents (`architect`, `coder`, `code-grader`, `code-reviewer`) may not call `project_memory_resolve` or
+  `project_memory_dismiss`, in addition to the existing memory-writing tools.
+
 ## [0.5.0] - 2026-11-04
 
 - Add normal and small Go coders with codenav-go MCP navigation and Go module/workspace detection. The public MCP runs
