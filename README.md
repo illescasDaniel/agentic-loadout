@@ -9,8 +9,10 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
 </p>
 
 - **Memory:** [agemem](https://github.com/illescasDaniel/agemem) keeps current state, decisions and durable notes in
-  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem (0.2.2+) also
-  disables Claude's built-in auto-memory for the project, to avoid double memory.
+  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem also disables Claude's
+  built-in auto-memory for the project, to avoid double memory. The agent is told to suggest a `memory-wrapup` skill
+  when a task is finished and before a push; it works agemem's queue of conflicting or repeated notes (agemem 0.3.0+).
+  Subagents can read that queue but never resolve it: only the main agent writes memory.
 - **Spec-driven development:** the `sdd-feature` skill takes a feature through design, spec, tests, implementation and
   an independent grade, with an approval gate between phases.
 - **Session history:** when the [Entire CLI](https://github.com/entireio/cli) is installed, capture agent sessions as
@@ -25,7 +27,7 @@ Each piece is handed to the tool that already installs it; agentic-loadout only 
 Needs `uv` (agemem, Python coder), Node.js 20+ (skills, TypeScript coder), and Go with gopls for the Go coder.
 
 `--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. To pin the loadout
-version, run `uvx --python 3.12 agentic-loadout@0.5.0 .`; individual dependencies may have their own version policy.
+version, run `uvx --python 3.12 agentic-loadout@0.6.0 .`; individual dependencies may have their own version policy.
 
 ## Use
 
@@ -73,6 +75,7 @@ section sits between `<!-- agentic-loadout:begin NAME -->` markers, so re-runnin
 | Piece | Installed by |
 |---|---|
 | Project memory (`memory/`, notes, MCP, hooks) | [agemem](https://github.com/illescasDaniel/agemem) `project init` |
+| Memory wrap-up skill (`memory-wrapup`) | `npx skills add illescasDaniel/agemem -s memory-wrapup` (pinned) |
 | Spec-driven development skill | `npx skills add illescasDaniel/sdd-feature-skill` |
 | Worktree skill (`/worktree create\|save\|apply\|delete`) | `npx skills add illescasDaniel/worktree-skill` |
 | Entire checkpoint capture, when its CLI is installed | `entire enable` and `entire agent add` |

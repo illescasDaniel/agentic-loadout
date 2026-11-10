@@ -108,6 +108,10 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
                          "put it in ~/.config/agemem/config.yaml (agemem created that file). Never paste it into a chat.")
             elif opts.memory_model is None:
                 ctx.note("Preserved the existing Agemem provider configuration.")
+        if opts.wants("agemem"):
+            run(skills_command(opts, pins.MEMORY_WRAPUP_SKILL, pins.MEMORY_WRAPUP_SKILL_REF, pins.MEMORY_WRAPUP_SKILL_NAME),
+                opts, executor, ctx.lines.append, skills_env())
+            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.MEMORY_WRAPUP_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
         if opts.wants("sdd"):
             run(skills_command(opts), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.SDD_SKILL_NAME), opts.selected(), 'skills-lock.json')}")

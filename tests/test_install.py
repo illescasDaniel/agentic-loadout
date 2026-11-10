@@ -27,7 +27,7 @@ def with_python_and_web(repo):
 
 def test_commands_are_project_scoped_and_pinned(repo):
     opts = Options(project=repo, tools=["claude", "cursor"], memory_model="qsiv", no_hooks=True)
-    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.2.2", "project", "init", "--mcp", "claude", "cursor",
+    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.3.0", "project", "init", "--mcp", "claude", "cursor",
                                     "--model", "qsiv", "--no-hooks", "--no-input"]
     skills = skills_command(opts)
     assert "-g" not in skills and "--global" not in skills and "--copy" in skills and "skills@1.7.4" in skills
@@ -269,3 +269,30 @@ def test_given_without_worktree_then_neither_skill_nor_rules(repo):
     assert code == 0, out
     assert not any(pins.WORKTREE_SKILL in " ".join(c) for c, _env in executor.calls)
     assert "Isolated worktrees" not in (repo / "AGENTS.md").read_text()
+
+
+def test_given_agemem_then_wrapup_skill_is_installed_pinned_and_only_that_skill(repo):
+    executor = FakeExecutor()
+    code, out = full(repo, executor=executor)
+    assert code == 0, out
+    cmd = next(c for c, _env in executor.calls if f"{pins.MEMORY_WRAPUP_SKILL}#{pins.MEMORY_WRAPUP_SKILL_REF}" in c)
+    assert cmd[cmd.index("-s") + 1] == pins.MEMORY_WRAPUP_SKILL_NAME and "-g" not in cmd and "--copy" in cmd
+    assert "memory-wrapup" in (repo / "AGENTS.md").read_text()
+
+
+def test_given_without_agemem_then_no_wrapup_skill(repo):
+    executor = FakeExecutor()
+    code, out = full(repo, executor=executor, without=frozenset({"agemem"}))
+    assert code == 0, out
+    assert not any(pins.MEMORY_WRAPUP_SKILL in " ".join(c) for c, _env in executor.calls)
+
+
+def test_given_subagents_then_memory_writers_including_queue_tools_are_denied():
+    import re
+    from agentic_loadout.agents import ASSETS
+    for name in ("architect.md", "code-grader.head.md", "coder.md", "tiers/code-reviewer.md"):
+        line = next(l for l in (ASSETS / "agents" / name).read_text(encoding="utf-8").splitlines() if l.startswith("disallowedTools:"))
+        denied = set(re.findall(r"mcp__agemem__(\w+)", line))
+        assert {"project_memory_capture", "project_memory_remember", "project_memory_index", "project_memory_maintain",
+                "project_memory_resolve", "project_memory_dismiss"} <= denied, name
+        assert "project_memory_pending" not in denied and "project_memory_recall" not in denied, name
