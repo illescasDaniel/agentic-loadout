@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1] - 2026-11-13
+
+- Update agemem to 0.4.0: every recall returns a one-line summaries tier (one `>` abstract per
+  `memory/*.md`, seeded by `agemem init`), and `project_memory_recall` accepts an optional `path`
+  under `memory/` that scopes the bank and source layers to that subtree while notes stay global —
+  measured 90–96% smaller packets at equal relevance against released 0.3.0.
+- The memory rules section new projects receive teaches the abstract rule and `path`-scoped recall.
+
 ## [0.6.0] - 2026-11-10
 
 - Update agemem to 0.3.0 and install its `memory-wrapup` skill (pinned, only that skill) whenever agemem is installed.
