@@ -1,6 +1,6 @@
 """Every external version in one place, so a release updates one file."""
 
-AGEMEM = "agemem@0.3.0"  # 0.3.0: pending-queue tools (pending/resolve/dismiss), revised memory guidance
+AGEMEM = "agemem@0.4.0"  # 0.4.0: recall summaries tier (one line per memory file), path-scoped recall
 AGEMEM_PYTHON = "3.12"
 SKILLS = "skills@1.7.4"
 SDD_SKILL = "illescasDaniel/sdd-feature-skill"
