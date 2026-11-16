@@ -4,7 +4,7 @@ agentic-loadout ships adapted copies of two Agent Skills. Each copy is made from
 
 | Skill | Upstream repository | Commit |
 |---|---|---|
-| `memory-1` | https://github.com/illescasDaniel/memory-1-skill | `b722d00df835f614ae75575b30a564c1652d2283` |
+| `memory-1` | https://github.com/illescasDaniel/memory-1-skill | `642ef0cdfde6dff8d1e2b78890a8c6441a13ba16` |
 | `docs-1` | https://github.com/illescasDaniel/docs-1-skill | `0fdbd5fbc39a7f5e6f8efb76a688ba3b734fcde9` |
 
 ## What differs from upstream
@@ -25,7 +25,7 @@ Every difference is an insertion between an `agentic-loadout:begin NAME` and an 
 | File | sha256 | Differs |
 |---|---|---|
 | `memory-1/SKILL.md` | `a98646295f9e34d072ac9ddbcd6e2082580949e539d1bcb902b82a272b3b0f09` | yes |
-| `memory-1/scripts/export_sessions.py` | `0b181c2b2117ba4e1a0da93b1da4035e0158ad57a01d602428a4374ec042a033` | yes |
+| `memory-1/scripts/export_sessions.py` | `bf3c7fa05ced7ecc4c26abcd00c7f0e39093b12cb9c5f9001e6ddb7e08913eb8` | yes |
 | `memory-1/scripts/memory_check.py` | `4e617dbb339f4a67b9d0cb9c9db70b2e61ff51cb0c6580db9ac59f41f0f67522` | no |
 | `memory-1/templates/LATER.md` | `b215b01ed2f7434b1287a2ebfc8dd7d69b89a97d0d464b7aa1ba7d0d65c1a676` | no |
 | `memory-1/templates/MEMORY.md` | `71375e4b3012cb78b1854265f9612752e8ca91e8bb59917b5642d4bddf0d9ad4` | no |

@@ -144,7 +144,9 @@ def find_sessions(project, claude_dirs):
                           if cdir.name == enc or inside(claude_cwd(p), project)]
     if CODEX_ROOT.is_dir():
         for path in sorted(CODEX_ROOT.rglob("*.jsonl")):
-            if inside(codex_meta(path).get("cwd"), project):
+            meta = codex_meta(path)
+            # Codex stores each subagent and automatic review as its own rollout; only the user's own sessions count.
+            if inside(meta.get("cwd"), project) and not (isinstance(meta.get("source"), dict) and "subagent" in meta["source"]):
                 found.append(("codex", path, read_codex))
     return found
 
@@ -282,7 +284,7 @@ def entire_gitignore(out):
     (out / ".gitignore").write_text("*\n!.gitignore\n!INDEX.md\n", encoding="utf-8")
 
 
-def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=print, warn=None):
+def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=print, warn=None, planned=()):
     """Write the sessions only Entire has. Returns the counts, or None when the repository has no Entire refs."""
     warn = warn or (lambda m: print(f"warning: {m}", file=sys.stderr))
     refs, slots = entire_candidates(project)
@@ -317,7 +319,9 @@ def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=p
                 counts["skipped"] += 1
                 continue
             # The readers above may have written this session already, possibly under another date: keep that file.
-            if (out / name).exists() or (out.is_dir() and next(iter(out.glob(f"*-{sid}.md")), None) is not None):
+            # `planned`: names the native pass just rendered; in a dry run they are not on disk yet.
+            if ((out / name).exists() or (out.is_dir() and next(iter(out.glob(f"*-{sid}.md")), None) is not None)
+                    or any(p == name or p.endswith(f"-{sid}.md") for p in planned)):
                 counts["present"] += 1
                 continue
             counts["new"] += 1
@@ -331,11 +335,11 @@ def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=p
     return counts
 
 
-def entire_main(project, out, args):
+def entire_main(project, out, args, planned=()):
     if entire_git(project, "rev-parse", "--git-dir").returncode != 0:
         print(f"--entire: {project} is not a git repository, so there are no Entire checkpoints to read", file=sys.stderr)
         return 1
-    counts = export_entire(project, out, args.since, args.max_chars, args.dry_run)
+    counts = export_entire(project, out, args.since, args.max_chars, args.dry_run, planned=planned)
     if counts is None:
         print(f"no Entire checkpoints found in {project} (none committed yet, or none fetched)", file=sys.stderr)
         return 1
@@ -390,7 +394,7 @@ def main(argv=None):
     print(", ".join(f"{v} {k}" for k, v in counts.items()), file=sys.stderr)
     # agentic-loadout:begin entire-run
     if args.entire:
-        entire_main(project, out, args)
+        entire_main(project, out, args, planned=set(rendered))
     # agentic-loadout:end entire-run
     return 0
 

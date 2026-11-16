@@ -112,7 +112,7 @@ def entire_gitignore(out):
     (out / ".gitignore").write_text("*\n!.gitignore\n!INDEX.md\n", encoding="utf-8")
 
 
-def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=print, warn=None):
+def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=print, warn=None, planned=()):
     """Write the sessions only Entire has. Returns the counts, or None when the repository has no Entire refs."""
     warn = warn or (lambda m: print(f"warning: {m}", file=sys.stderr))
     refs, slots = entire_candidates(project)
@@ -147,7 +147,9 @@ def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=p
                 counts["skipped"] += 1
                 continue
             # The readers above may have written this session already, possibly under another date: keep that file.
-            if (out / name).exists() or (out.is_dir() and next(iter(out.glob(f"*-{sid}.md")), None) is not None):
+            # `planned`: names the native pass just rendered; in a dry run they are not on disk yet.
+            if ((out / name).exists() or (out.is_dir() and next(iter(out.glob(f"*-{sid}.md")), None) is not None)
+                    or any(p == name or p.endswith(f"-{sid}.md") for p in planned)):
                 counts["present"] += 1
                 continue
             counts["new"] += 1
@@ -161,11 +163,11 @@ def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=p
     return counts
 
 
-def entire_main(project, out, args):
+def entire_main(project, out, args, planned=()):
     if entire_git(project, "rev-parse", "--git-dir").returncode != 0:
         print(f"--entire: {project} is not a git repository, so there are no Entire checkpoints to read", file=sys.stderr)
         return 1
-    counts = export_entire(project, out, args.since, args.max_chars, args.dry_run)
+    counts = export_entire(project, out, args.since, args.max_chars, args.dry_run, planned=planned)
     if counts is None:
         print(f"no Entire checkpoints found in {project} (none committed yet, or none fetched)", file=sys.stderr)
         return 1

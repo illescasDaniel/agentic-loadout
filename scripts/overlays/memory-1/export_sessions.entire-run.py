@@ -1,2 +1,2 @@
     if args.entire:
-        entire_main(project, out, args)
+        entire_main(project, out, args, planned=set(rendered))

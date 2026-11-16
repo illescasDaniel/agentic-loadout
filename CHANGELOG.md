@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.1] - 2026-11-16
+
+Found while upgrading a real project from 0.6.x.
+
+### Fixed
+- Agent files that were kept because you edited them, and that still tell agents to use agemem tools, are now named in
+  the final review list with the two ways to fix them (`--force`, or have your agent remove the agemem instructions).
+  Before, they were only reported as "differs from the shipped version".
+- memory-1's session export no longer writes Codex subagent and automatic-review rollouts as sessions (memory-1 at
+  `642ef0c`); in one project they were about half of the exported files.
+- `export_sessions.py --entire --dry-run` no longer lists as new the Entire sessions that the same run would already
+  write from the agent's own transcripts.
+
 ## [0.7.0] - 2026-11-16
 
 ### Breaking

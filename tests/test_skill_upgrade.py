@@ -130,3 +130,12 @@ def test_a_newer_release_updates_untouched_copies_and_keeps_edited_files(repo, m
     before = snapshot(repo)
     code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=LEAN)
     assert code == 0 and snapshot(repo) == before
+
+
+def test_kept_agent_files_that_still_name_agemem_tools_are_listed_for_review(repo):
+    code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=frozenset({"sdd", "worktree", "coders"}))
+    assert code == 0, out
+    edited = repo / ".claude/agents/architect.md"
+    edited.write_text(edited.read_text() + "\nUse mcp__agemem__project_memory_recall first.\n")
+    code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=frozenset({"sdd", "worktree", "coders"}))
+    assert code == 0 and "still tell agents to use agemem tools" in out and ".claude/agents/architect.md" in out

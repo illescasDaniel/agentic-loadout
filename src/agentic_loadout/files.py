@@ -17,6 +17,7 @@ class Ctx:
     lines: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)  # follow-up steps for the user, printed in the summary
+    stale: list[Path] = field(default_factory=list)  # kept files that still tell agents to use agemem tools
     pending: dict[Path, bytes] = field(default_factory=dict)
     removed: set[Path] = field(default_factory=set)  # files to delete on apply; they read as absent until rewritten
 
@@ -92,6 +93,8 @@ def write_bytes(ctx: Ctx, dest: Path, data: bytes, log: bool = True) -> str:
             log and ctx.log("unchanged", dest)
             return "unchanged"
         if not ctx.force:
+            if any(mark in ctx.read(dest) for mark in (b"mcp__agemem__", b"project_memory_recall")):
+                ctx.stale.append(dest)
             log and ctx.log("skipped", dest, "differs from the shipped version (use --force to overwrite)")
             return "skipped"
         status = "replaced"

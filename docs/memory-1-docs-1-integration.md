@@ -1,6 +1,6 @@
 # memory-1 and docs-1 instead of agemem
 
-Status: decided and implemented for release 0.7.0 on the local branch `memory-1-docs-1`. The seven open questions of the
+Status: decided and implemented and released in 0.7.0. The seven open questions of the
 exploration are answered in section 8.
 
 ## Decision

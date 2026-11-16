@@ -122,6 +122,12 @@ def summary(ctx: Ctx, opts: Options, report: git_state.Report | None, out: Calla
             out("\n".join(f"  {e}" for e in report.excluded))
         for line in git_state.explain_changes(report, opts.hide):
             ctx.warn(line)
+    if ctx.stale:
+        names = ", ".join(sorted(p.relative_to(ctx.project).as_posix() for p in ctx.stale))
+        ctx.warn(f"{len(ctx.stale)} agent file(s) were kept because they differ from the shipped version, and they still "
+                 f"tell agents to use agemem tools, which are gone: {names}. Re-run with --force to replace them with the "
+                 "shipped versions (this drops your edits to them), or ask your coding agent to remove the agemem "
+                 "instructions from them and use the memory rules in AGENTS.md instead.")
     if ctx.warnings:
         out("\nReview:\n" + "\n".join(f"  - {w}" for w in ctx.warnings))
     if ctx.notes:
