@@ -81,7 +81,7 @@ def test_given_full_install_then_no_jevmem_anywhere_and_grader_comes_from_the_sk
     for path in (repo / ".claude").rglob("*.md"):
         assert "jevmem" not in path.read_text().lower(), path
     assert "jevmem" not in (repo / ".agents/development-workflow.md").read_text().lower()
-    assert json.loads((repo / ".claude/settings.json").read_text()) == {"autoMemoryEnabled": False}
+    assert not (repo / ".claude/settings.json").exists()  # no autoMemoryEnabled is written any more
     rules = (repo / "AGENTS.md").read_text()
     assert "## Project memory (memory-1)" in rules and "## Project docs (docs-1)" in rules
     assert "agemem" not in rules.lower() and "project_memory" not in rules
@@ -200,7 +200,7 @@ def test_given_tracked_skills_lock_edited_by_skills_then_it_is_explained(repo):
 
 
 def test_given_shared_mode_then_no_absolute_path_warning(repo):
-    code, out = full(repo, dry_run=True)
+    code, out = full(repo, dry_run=True, model="sonnet")
     assert code == 0, out
     assert "absolute project path" not in out
     assert ".claude/settings.json" in out and ".claude/settings.local.json" not in out

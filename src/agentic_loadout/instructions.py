@@ -113,3 +113,32 @@ def _import_agents_md(ctx: Ctx, claude_md: Path) -> None:
         return
     ctx.write(claude_md, ("@AGENTS.md\n" + (("\n" + text) if text.strip() else "")).encode("utf-8"))
     ctx.log(ctx.verb(claude_md), claude_md, "+ @AGENTS.md import")
+
+
+INSTRUCTION_FILES = ("AGENTS.md", "CLAUDE.md", "CLAUDE.local.md")
+
+
+def has_section(project: Path, name: str) -> bool:
+    """True when any instruction file carries this section's markers (a previous run wrote it)."""
+    return any((project / f).is_file() and _marker_re(name).search((project / f).read_text(encoding="utf-8", errors="replace"))
+               for f in INSTRUCTION_FILES)
+
+
+def remove_section(ctx: Ctx, name: str) -> bool:
+    """Take a section this package wrote out of every instruction file (its markers and everything between them)."""
+    removed = False
+    for rel in INSTRUCTION_FILES:
+        path = ctx.project / rel
+        if not ctx.exists(path):
+            continue
+        raw = ctx.read(path)
+        crlf = b"\r\n" in raw
+        text = raw.decode("utf-8").replace("\r\n", "\n")
+        updated, count = re.subn(rf"\n*{_marker_re(name).pattern}\n*", "\n\n", text, count=1, flags=re.DOTALL)
+        if not count:
+            continue
+        updated = updated.strip("\n") + "\n" if updated.strip() else ""
+        ctx.write(path, (updated.replace("\n", "\r\n") if crlf else updated).encode("utf-8"))
+        ctx.log(ctx.verb(path), path, f"- {name} section removed")
+        removed = True
+    return removed

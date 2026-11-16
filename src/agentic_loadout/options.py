@@ -16,6 +16,7 @@ class Options:
     with_coders: list[str] | None = None  # None: detect and confirm; [] with "coders" in `without`: skip
     without: frozenset[str] = frozenset()
     no_hooks: bool = False
+    entire: bool = False  # Entire is opt-in (--with entire / --entire), or kept for a project that already uses it
     entire_upload_sessions: bool = False
     personal_settings: bool = False
     git_exclude: bool = False
@@ -28,6 +29,8 @@ class Options:
     force: bool = False
 
     def wants(self, component: str) -> bool:
+        if component == "entire":
+            return self.entire and "entire" not in self.without
         return component not in self.without
 
     @property

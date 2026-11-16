@@ -209,17 +209,17 @@ def build(skill: str, commit: str, upstream: dict[str, bytes], inserts: list[Ins
 
 def upstream_doc(built: dict[str, Built]) -> str:
     out = ["# Upstream skills", "",
-           "agentic-loadout ships adapted copies of two Agent Skills. Each copy is made from the skill's own repository at "
-           "the commit below; those repositories are never changed from here. Do not edit these folders by hand: "
-           "`scripts/sync_skills.py` rebuilds them.", "",
+           ("agentic-loadout ships adapted copies of two Agent Skills. Each copy is made from the skill's own repository at "
+            "the commit below; those repositories are never changed from here. Do not edit these folders by hand: "
+            "`scripts/sync_skills.py` rebuilds them."), "",
            "| Skill | Upstream repository | Commit |", "|---|---|---|"]
     for name, b in built.items():
         repo = SKILLS[name][1]
         out.append(f"| `{name}` | https://github.com/{repo} | `{b.commit}` |")
     out += ["", "## What differs from upstream", "",
-            "Every difference is an insertion between an `agentic-loadout:begin NAME` and an `agentic-loadout:end NAME` marker "
-            "line (`#` comments in Python, HTML comments in Markdown). Removing the marked blocks, and the blank lines right "
-            "after each end marker, gives the upstream file byte for byte. Nothing else is changed.", ""]
+            ("Every difference is an insertion between an `agentic-loadout:begin NAME` and an `agentic-loadout:end NAME` marker "
+             "line (`#` comments in Python, HTML comments in Markdown). Removing the marked blocks, and the blank lines right "
+             "after each end marker, gives the upstream file byte for byte. Nothing else is changed."), ""]
     any_diff = False
     for name, b in built.items():
         for path, items in sorted(b.adapted.items()):
@@ -239,15 +239,15 @@ def upstream_doc(built: dict[str, Built]) -> str:
             "python3 scripts/sync_skills.py --memory-1 ../memory-1-skill --memory-1-commit <commit> \\",
             "                               --docs-1 ../docs-1-skill --docs-1-commit <commit>",
             "```", "",
-            "Add `--check` to verify without writing. The script fails when an overlay anchor line no longer exists "
-            "upstream; fix `scripts/overlays/overlays.toml` and run it again.", ""]
+            ("Add `--check` to verify without writing. The script fails when an overlay anchor line no longer exists "
+             "upstream; fix `scripts/overlays/overlays.toml` and run it again."), ""]
     return "\n".join(out)
 
 
 def new_pins(text: str, built: dict[str, Built]) -> str:
     for name, b in built.items():
         variable = SKILLS[name][0]
-        text, count = re.subn(rf'(?m)^({variable} = )"[^"\n]*"[^\n]*$', lambda m: f'{m[1]}"{b.commit}"', text)
+        text, count = re.subn(rf'(?m)^({variable} = )"[^"\n]*"[^\n]*$', lambda m, commit=b.commit: f'{m[1]}"{commit}"', text)
         if count != 1:
             raise SyncError(f"{PINS_FILE} must contain exactly one `{variable} = \"...\"` line (found {count})")
     return text

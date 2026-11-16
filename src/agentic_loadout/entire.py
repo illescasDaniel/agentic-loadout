@@ -2,25 +2,54 @@
 from __future__ import annotations
 
 import json
+import re
 
 from . import git_state
+from .brew import System
 from .files import Ctx, read_json, write_json
 from .options import Options
 from .runners import Executor, run
 
 AGENTS = {"claude": "claude-code", "codex": "codex", "cursor": "cursor"}
+MIN_VERSION = (0, 10, 0)  # refs storage (refs/entire/checkpoints/) became the default here
+TESTED_VERSIONS = "0.12.2 and 0.13.2"
+INSTALL_HELP = ("Install it with `brew install --cask entireio/tap/entire` or `curl -fsSL https://entire.com/install.sh | bash` "
+                "(Windows and other options: https://docs.entire.com/installation), then re-run with --with entire.")
+SKIPPED = "Skipped: checkpoint capture (`entire enable`, its git and client hooks) and the Entire rules."
 
 
-def install(ctx: Ctx, opts: Options, executor: Executor, present: bool) -> bool:
+def cli_problem(system: System) -> str | None:
+    """Why the Entire CLI cannot be used (None when it can): missing, or older than the minimum version."""
+    minimum = ".".join(map(str, MIN_VERSION))
+    if system.which("entire") is None:
+        return f"Entire was requested but the `entire` CLI is not installed. {SKIPPED} {INSTALL_HELP}"
+    try:
+        result = system.run(["entire", "--version"])
+        match = re.search(r"(\d+)\.(\d+)\.(\d+)", (result.stdout or "") + (result.stderr or ""))
+    except OSError:
+        match = None
+    if match is None:
+        return None  # an unreadable version is not proof of an old one; the real commands fail loudly if it is unusable
+    found = tuple(int(x) for x in match.groups())
+    if found < MIN_VERSION:
+        return (f"Entire was requested but the installed `entire` is {'.'.join(match.groups())}; loadout needs {minimum} or "
+                f"newer (refs storage became the default in {minimum}; {TESTED_VERSIONS} were tested). {SKIPPED} Upgrade it: "
+                + INSTALL_HELP)
+    return None
+
+
+def install(ctx: Ctx, opts: Options, executor: Executor, cli_problem: str | None = None) -> bool:
+    """Enable Entire capture. `cli_problem` (from `cli_problem()`) is why the CLI cannot be used; the run goes on without."""
     if not opts.wants("entire"):
         return False
     if opts.no_hooks:
         ctx.note("Entire was skipped because --no-hooks was selected.")
         return False
-    if not present:
+    if cli_problem:
         if opts.entire_upload_sessions:
-            raise SystemExit("error: --entire-upload-sessions requires the Entire CLI on PATH")
-        ctx.note("Entire CLI was not found; install it and re-run to enable checkpoint capture (or use --without entire).")
+            raise SystemExit("error: --entire-upload-sessions requires the Entire CLI on PATH, version "
+                             + ".".join(map(str, MIN_VERSION)) + " or newer")
+        ctx.warn(cli_problem)
         return False
     if not git_state.is_git_repo(opts.project):
         if opts.entire_upload_sessions:

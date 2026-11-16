@@ -7,19 +7,18 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
-from . import coders, entire, git_state, legacy, pins
+from . import coders, entire, git_state, legacy, pins, skills
 from .agents import ASSETS, SKILL_DIRS as AGENT_SKILL_DIRS, install_agents, install_tier_agents
 from .brew import System
-from .files import Ctx, read_json, write_bytes, write_json
-from .instructions import Section, apply_sections
+from .files import Ctx, read_json, write_json
+from .instructions import Section, apply_sections, has_section, remove_section
 from .options import Options
 from .preflight import check
 from .runners import Executor, default_executor, run, skills_command, skills_env
 from .ui import Prompter
 from .vendors import VENDORS, workflow_path
 
-ENTIRE_SESSIONS_SCRIPT = ".agents/scripts/entire_sessions.py"
-SKILL_DIRS = {"claude": ".claude/skills", "cursor": ".agents/skills", "codex": ".agents/skills"}
+SKILL_DIRS = skills.SKILL_DIRS
 
 
 def _skill_writes(name: str) -> dict[str, list[str]]:
@@ -55,11 +54,14 @@ def memory_present(project: Path) -> bool:
         (project / folder / pins.MEMORY_SKILL_NAME / "SKILL.md").is_file() for folder in AGENT_SKILL_DIRS)
 
 
-def _tail_rules(opts: Options) -> list[Section]:
+def _tail_rules(opts: Options, entire_rules: bool) -> list[Section]:
     sections = []
     if opts.wants("memory"):
         old = _template("memory-legacy.md") if legacy.has_legacy_memory(opts.project) else ""
-        body = _template("memory-rules.md").replace("{{LEGACY}}", old).replace("{{SKILL_DIR}}", skill_dir(opts))
+        flag, note = ((" --entire", " The `--entire` flag also adds sessions that only Entire has (see the Entire section).")
+                      if entire_rules else ("", ""))
+        body = (_template("memory-rules.md").replace("{{LEGACY}}", old).replace("{{SKILL_DIR}}", skill_dir(opts))
+                .replace("{{ENTIRE_FLAG}}", flag).replace("{{ENTIRE_NOTE}}", note))
         sections.append(Section("memory", re.sub(r"\n{3,}", "\n\n", body)))
     if opts.wants("docs"):
         sections.append(Section("docs", _template("docs-rules.md").replace("{{SKILL_DIR}}", skill_dir(opts))))
@@ -75,8 +77,26 @@ def _entire_rules(opts: Options) -> Section:
     return Section("entire", _template("entire-rules.md").replace("{{SESSIONS}}", sessions))
 
 
+def resolve_entire(ctx: Ctx, opts: Options) -> bool:
+    """Entire is opt-in. It is also kept on for a project whose rules already carry the `entire` section (loadout enabled
+    it earlier) unless --without entire. Sets `opts.entire`; returns True when the project's Entire rules section stays."""
+    marker = has_section(opts.project, "entire")
+    if "entire" in opts.without:
+        opts.entire = False
+        if marker and remove_section(ctx, "entire"):
+            ctx.note("The Entire rules section was removed because of --without entire. Checkpoint capture itself (`.entire/`, "
+                     "git and client hooks) stays; run `entire disable` to turn it off.")
+        return False
+    if marker and not opts.entire:
+        opts.entire = True
+        ctx.note("Entire stays on: this project's rules already have the Entire section (loadout enabled it earlier). "
+                 "Use --without entire to turn it off.")
+    return marker
+
+
 def install_settings(ctx: Ctx, opts: Options) -> None:
-    """Claude Code only: `--model`, and turning off Claude's built-in auto-memory when memory-1 is the project's memory."""
+    """Claude Code only: `--model`. An `autoMemoryEnabled` value is never written; the README recommends turning
+    Claude's built-in auto memory off so memory-1 is the project's one memory."""
     if "claude" not in opts.tools:
         return
     shared, personal = (ctx.project / ".claude" / n for n in ("settings.json", "settings.local.json"))
@@ -86,11 +106,6 @@ def install_settings(ctx: Ctx, opts: Options) -> None:
     if opts.model and data.get("model") != opts.model:
         data["model"] = opts.model
         changes.append(f"model={opts.model}")
-    # A value the user set in either project settings file is left alone (agemem used to do the same).
-    if opts.wants("memory") and "autoMemoryEnabled" not in data and not any(
-            "autoMemoryEnabled" in read_json(p, ctx)[0] for p in (shared, personal) if p != target):
-        data["autoMemoryEnabled"] = False
-        changes.append("autoMemoryEnabled=false")
     if changes:
         write_json(ctx, target, data, indent, changes)
 
@@ -117,43 +132,41 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
                 out: Callable[[str], None] = print) -> int:
     system = system or System()
     ctx = Ctx(opts.project, dry_run=opts.dry_run, force=opts.force)
+    entire_marker = resolve_entire(ctx, opts)
     # Preflight: ask every question and check every tool before the first write.
     plan = coders.prepare(ctx, opts, prompter, system, opts.with_coders)
     problems = check(opts, plan.keys)
     if problems:
         out("Cannot continue:\n" + "\n".join(f"  - {p}" for p in problems))
         return 1
+    entire_problem = entire.cli_problem(system) if opts.wants("entire") else None
     before = git_state.snapshot(opts.project)
     if opts.dry_run:
         out("Dry run. Project scope only; these are the commands and the files they write:")
     try:
         if opts.wants("memory"):
             legacy.migrate(ctx, opts, executor)
-            run(skills_command(opts, pins.MEMORY_SKILL, pins.MEMORY_SKILL_REF, pins.MEMORY_SKILL_NAME),
-                opts, executor, ctx.lines.append, skills_env())
-            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.MEMORY_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
-        if opts.wants("docs"):
-            run(skills_command(opts, pins.DOCS_SKILL, pins.DOCS_SKILL_REF, pins.DOCS_SKILL_NAME),
-                opts, executor, ctx.lines.append, skills_env())
-            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.DOCS_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
+        skills.remove_old_entire_script(ctx)
+        replaced = [name for name, wanted in ((pins.MEMORY_SKILL_NAME, opts.wants("memory")), (pins.DOCS_SKILL_NAME, opts.wants("docs")))
+                    if wanted and skills.install_skill(ctx, opts, name)]
         if opts.wants("sdd"):
             run(skills_command(opts), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.SDD_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
         if opts.wants("worktree"):
             run(skills_command(opts, pins.WORKTREE_SKILL, pins.WORKTREE_SKILL_REF), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.WORKTREE_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
-        entire_enabled = entire.install(ctx, opts, executor, system.which("entire") is not None)
+        skills.drop_lock_entries(ctx, replaced)  # after the npx runs, so their lock updates are kept
+        entire_enabled = entire.install(ctx, opts, executor, entire_problem)
+        entire_rules = entire_enabled or entire_marker
         sections = _rules(opts)
-        if entire_enabled:
+        if entire_rules:
             sections.append(_entire_rules(opts))
-            if opts.wants("memory"):
-                write_bytes(ctx, ctx.project / ENTIRE_SESSIONS_SCRIPT, (ASSETS / "scripts" / "entire_sessions.py").read_bytes())
         if opts.wants("agents"):
             install_agents(ctx, opts.selected(), opts.wants("sdd"), opts.wants("memory"))
         if opts.wants("agents") or plan.keys:
             install_tier_agents(ctx, opts.selected(), opts.wants("memory"), opts.wants("agents"), True)
         sections += coders.install(ctx, opts, plan, system, opts.wants("memory"))
-        sections += _tail_rules(opts)
+        sections += _tail_rules(opts, entire_rules)
         apply_sections(ctx, opts.selected(), opts.personal_settings, sections, opts.claude_compat)
         install_settings(ctx, opts)
         ctx.apply()

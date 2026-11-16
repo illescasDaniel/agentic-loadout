@@ -82,8 +82,8 @@ def world(tmp_path):
     pins.write_text('MEMORY_SKILL_REF = "old"  # note\nDOCS_SKILL_REF = "old"\nOTHER = "keep"\n')
     memory, mem_commit = make_upstream(tmp_path, "memory-1", {"SKILL.md": SKILL_V1, "scripts/run.py": SCRIPT_V1, "templates/x.md": "x\n"})
     docs, docs_commit = make_upstream(tmp_path, "docs-1", {"SKILL.md": "---\nname: docs-1\n---\n\n# docs\n"})
-    return dict(root=tmp_path, overlays=overlays, skills=skills, pins=pins, memory=memory, docs=docs, mem_commit=mem_commit,
-                docs_commit=docs_commit)
+    return {"root": tmp_path, "overlays": overlays, "skills": skills, "pins": pins, "memory": memory, "docs": docs,
+            "mem_commit": mem_commit, "docs_commit": docs_commit}
 
 
 def run(w, check=False, memory_ref=None, **kw):

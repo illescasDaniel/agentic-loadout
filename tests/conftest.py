@@ -20,13 +20,15 @@ def repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def make_system(system="Linux", binaries=(), brew_prefix="/opt/homebrew", brew_ok=True):
+def make_system(system="Linux", binaries=(), brew_prefix="/opt/homebrew", brew_ok=True, entire_version="0.13.2"):
     calls = []
 
     def run(cmd):
         calls.append(list(cmd))
         if list(cmd) == ["brew", "--prefix"]:
             return subprocess.CompletedProcess(cmd, 0, brew_prefix + "\n", "")
+        if list(cmd) == ["entire", "--version"]:
+            return subprocess.CompletedProcess(cmd, 0, f"Entire CLI {entire_version}\nGo version: go1.27.3\nOS/Arch: linux/amd64\n", "")
         return subprocess.CompletedProcess(cmd, 0 if brew_ok else 1, "", "boom")
 
     return System(system=lambda: system, which=lambda name: f"/usr/bin/{name}" if name in binaries else None, run=run), calls

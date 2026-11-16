@@ -18,12 +18,21 @@ class Ctx:
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)  # follow-up steps for the user, printed in the summary
     pending: dict[Path, bytes] = field(default_factory=dict)
+    removed: set[Path] = field(default_factory=set)  # files to delete on apply; they read as absent until rewritten
 
     def exists(self, path: Path) -> bool:
-        return path in self.pending or path.exists()
+        if path in self.pending:
+            return True
+        return path.exists() and path not in self.removed
 
     def read(self, path: Path) -> bytes:
         return self.pending[path] if path in self.pending else path.read_bytes()
+
+    def remove_tree(self, path: Path) -> list[Path]:
+        """Plan to delete a folder (or one file) inside the project. Returns the files affected."""
+        files = [p for p in path.rglob("*") if p.is_file() or p.is_symlink()] if path.is_dir() else [path] if path.exists() else []
+        self.removed.update(files)
+        return files
 
     def write(self, path: Path, data: bytes):
         if path.exists() and not path.is_file():
@@ -37,10 +46,18 @@ class Ctx:
         """Apply only after every generated file has been checked."""
         if self.dry_run:
             return
+        for path in sorted(self.removed - set(self.pending)):
+            if path.is_file() or path.is_symlink():
+                path.unlink()
+            for parent in path.parents:  # folders that became empty go with their files, never above the project
+                if parent == self.project or not parent.is_dir() or any(parent.iterdir()):
+                    break
+                parent.rmdir()
         for path, data in self.pending.items():
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         self.pending.clear()
+        self.removed.clear()
 
     def log(self, status: str, path: Path | str, note: str = "") -> None:
         shown = path
@@ -67,20 +84,21 @@ class Ctx:
         return "edited" if existed else "created"
 
 
-def write_bytes(ctx: Ctx, dest: Path, data: bytes) -> str:
-    """Create `dest`, or replace it only with --force. Never overwrites a file that differs by default."""
+def write_bytes(ctx: Ctx, dest: Path, data: bytes, log: bool = True) -> str:
+    """Create `dest`, or replace it only with --force. Never overwrites a file that differs by default.
+    With `log=False` the caller reports (one line for a whole folder)."""
     if ctx.exists(dest):
         if ctx.read(dest) == data:
-            ctx.log("unchanged", dest)
+            log and ctx.log("unchanged", dest)
             return "unchanged"
         if not ctx.force:
-            ctx.log("skipped", dest, "differs from the shipped version (use --force to overwrite)")
+            log and ctx.log("skipped", dest, "differs from the shipped version (use --force to overwrite)")
             return "skipped"
         status = "replaced"
     else:
         status = "created"
     ctx.write(dest, data)
-    ctx.log(status if not ctx.dry_run else f"would {status.removesuffix('d')}", dest)
+    log and ctx.log(status if not ctx.dry_run else f"would {status.removesuffix('d')}", dest)
     return status
 
 

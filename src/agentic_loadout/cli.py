@@ -33,10 +33,14 @@ def main_parser() -> argparse.ArgumentParser:
                                 epilog="Run `agentic-loadout coders --help` to add language coders on their own.")
     p.add_argument("path", nargs="?", default=".", help="project root (default: .)")
     _common(p)
-    p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: go,python,swift,typescript or all (default: detect and confirm)")
-    p.add_argument("--without", metavar="PARTS", help=f"leave parts out: {','.join(COMPONENTS)}")
+    p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: go,python,swift,typescript or all (default: detect "
+                   "and confirm); add `entire` to turn on Entire session history (same as --entire)")
+    p.add_argument("--entire", action="store_true", help="turn on Entire session history: checkpoint capture, its rules, and "
+                   "`export_sessions.py --entire` (off by default; needs the `entire` CLI 0.10.0 or newer)")
+    p.add_argument("--without", metavar="PARTS", help=f"leave parts out: {','.join(COMPONENTS)} (`entire` also turns it off "
+                   "for a project that already uses it)")
     p.add_argument("--memory-model", choices=("jev", "qsiv"), help=argparse.SUPPRESS)  # agemem is gone; accepted and ignored
-    p.add_argument("--no-hooks", action="store_true", help="skip Entire checkpoint capture (its git and client hooks)")
+    p.add_argument("--no-hooks", action="store_true", help="with Entire: skip checkpoint capture (its git and client hooks)")
     p.add_argument("--entire-upload-sessions", action="store_true", help="explicitly enable Entire checkpoint uploads; transcripts may be public")
     p.add_argument("--model", help="Claude project model alias for .claude/settings.json (settings.local.json with --personal-settings)")
     return p
@@ -80,10 +84,15 @@ def main(argv: list[str] | None = None) -> int:
     opts.entire_upload_sessions = args.entire_upload_sessions
     if opts.entire_upload_sessions and ("entire" in parts or opts.no_hooks):
         raise SystemExit("error: --entire-upload-sessions requires Entire and hooks")
-    if args.with_:
+    with_names = [n for n in (n.strip().lower() for n in (args.with_ or "").split(",")) if n]
+    opts.entire = args.entire or "entire" in with_names
+    if opts.entire and "entire" in parts:
+        raise SystemExit("error: --with entire (or --entire) and --without entire contradict each other")
+    languages = [n for n in with_names if n != "entire"]
+    if languages:
         if "coders" in parts:
             raise SystemExit("error: --with and --without coders contradict each other")
-        opts.with_coders = parse_languages([args.with_])
+        opts.with_coders = parse_languages([",".join(languages)])
     return run_install(opts, Prompter(opts.yes, opts.no_input))
 
 

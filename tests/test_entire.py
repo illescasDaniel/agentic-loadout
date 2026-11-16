@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(shutil.which("entire") is None, reason="Entire C
 
 
 def install_entire(repo, **kwargs):
-    opts = Options(project=repo, tools=["codex", "cursor"], no_input=True, yes=True,
+    opts = Options(project=repo, tools=["codex", "cursor"], no_input=True, yes=True, entire=True,
                    without=frozenset({"memory", "docs", "agents", "coders", "sdd", "worktree"}), **kwargs)
     output = []
     result = run_install(opts, Prompter(yes=True, no_input=True), make_system(binaries=("entire",))[0], out=output.append)
@@ -85,6 +85,6 @@ def test_entire_fails_closed_when_upload_status_is_unknown(repo):
 
 
 def test_explicit_upload_request_requires_installed_cli(repo):
-    opts = Options(project=repo, entire_upload_sessions=True)
+    opts = Options(project=repo, entire=True, entire_upload_sessions=True)
     with pytest.raises(SystemExit, match="requires the Entire CLI"):
-        entire.install(Ctx(repo), opts, lambda *_: None, False)
+        entire.install(Ctx(repo), opts, lambda *_: None, "not installed")

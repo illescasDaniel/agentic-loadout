@@ -39,3 +39,6 @@ dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+extend-exclude = ["src/agentic_loadout/assets/skills", "scripts/overlays"]

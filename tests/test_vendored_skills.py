@@ -16,7 +16,7 @@ spec.loader.exec_module(sync_skills)
 
 SKILLS = ASSETS / "skills"
 DOC = (SKILLS / "UPSTREAM.md").read_text(encoding="utf-8")
-MANIFEST = {m[1]: (m[2], m[3] == "yes") for m in re.finditer(r"^\| `([^`/]+/[^`]+)` \| `([0-9a-f]{64})` \| (yes|no) \|$", DOC, re.M)}
+MANIFEST = {m[1]: (m[2], m[3] == "yes") for m in re.finditer(r"^\| `([^`/]+/[^`]+)` \| `([0-9a-f]{64})` \| (yes|no) \|$", DOC, re.MULTILINE)}
 
 
 def vendored_files():

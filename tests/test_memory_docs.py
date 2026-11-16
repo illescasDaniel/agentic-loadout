@@ -7,7 +7,7 @@ import tomllib
 
 import pytest
 
-from agentic_loadout import cli, install, pins
+from agentic_loadout import cli, install, pins, skills
 from agentic_loadout.agents import ASSETS
 from agentic_loadout.options import Options
 from tests.conftest import FakeExecutor, make_system
@@ -45,15 +45,24 @@ def agemem_project(repo):
                                     "- call `project_memory_recall`\n<!-- agentic-loadout:end memory -->\n")
 
 
-def test_memory_and_docs_skills_are_installed_pinned_project_scoped_and_by_name(repo):
+def test_memory_and_docs_skills_are_copied_from_the_shipped_files_without_npx(repo):
     executor = FakeExecutor()
-    code, out = full(repo, executor=executor)
+    code, out = full(repo, executor=executor, tools=("claude", "cursor", "codex"))
     assert code == 0, out
-    adds = {c[c.index("-s") + 1]: c for c, _env in executor.calls if "add" in c and "-s" in c}
-    for repo_name, ref, skill in ((pins.MEMORY_SKILL, pins.MEMORY_SKILL_REF, "memory-1"), (pins.DOCS_SKILL, pins.DOCS_SKILL_REF, "docs-1")):
-        cmd = adds[skill]
-        assert f"{repo_name}#{ref}" in cmd and len(ref) == 40 and "-g" not in cmd and "--copy" in cmd
+    for name in ("memory-1", "docs-1"):
+        for folder in (".claude/skills", ".agents/skills"):
+            for rel, data in skills.vendored_files(name).items():
+                assert (repo / folder / name / rel).read_bytes() == data, (folder, name, rel)
+    assert (repo / ".claude/skills/memory-1/templates/sessions/.gitignore").is_file()
+    installed = {c[c.index("add") + 1].split("#")[0] for c, _env in executor.calls if "add" in c}
+    assert installed == {pins.SDD_SKILL, pins.WORKTREE_SKILL}  # memory-1 and docs-1 need no download
     assert not any("uvx" in c[0] for c, _env in executor.calls)
+
+
+def test_the_shipped_pins_are_full_commit_ids_recorded_with_the_copies():
+    assert len(pins.MEMORY_SKILL_REF) == len(pins.DOCS_SKILL_REF) == 40
+    notes = (ASSETS / "skills/UPSTREAM.md").read_text()
+    assert pins.MEMORY_SKILL_REF in notes and pins.DOCS_SKILL_REF in notes
 
 
 def test_without_memory_or_docs_the_skill_and_its_rules_are_left_out(repo):
@@ -84,16 +93,17 @@ def test_rules_for_codex_point_at_agents_skills_and_no_claude_settings_are_writt
     assert not (repo / ".claude/settings.json").exists()
 
 
-def test_claude_builtin_auto_memory_is_turned_off_only_when_absent(repo):
+def test_claude_builtin_auto_memory_setting_is_never_written_and_an_existing_value_is_left_alone(repo):
     full(repo)
-    assert json.loads((repo / ".claude/settings.json").read_text())["autoMemoryEnabled"] is False
+    assert not (repo / ".claude/settings.json").exists()
     other = repo / "other"
     other.mkdir()
     subprocess.run(["git", "init", "-q", str(other)], check=True)
-    write_json(other / ".claude/settings.local.json", {"autoMemoryEnabled": True})
-    full(other)
-    assert not (other / ".claude/settings.json").exists() or "autoMemoryEnabled" not in (other / ".claude/settings.json").read_text()
-    assert json.loads((other / ".claude/settings.local.json").read_text())["autoMemoryEnabled"] is True
+    write_json(other / ".claude/settings.json", {"autoMemoryEnabled": True, "model": "x"})
+    write_json(other / ".claude/settings.local.json", {"autoMemoryEnabled": False})
+    full(other, model="sonnet")
+    assert json.loads((other / ".claude/settings.json").read_text()) == {"autoMemoryEnabled": True, "model": "sonnet"}
+    assert json.loads((other / ".claude/settings.local.json").read_text()) == {"autoMemoryEnabled": False}
 
 
 def test_upgrade_removes_only_agemem_entries_and_leaves_the_users_memory(repo):
@@ -189,30 +199,34 @@ def install_with_entire(repo, **kw):
     return code, "\n".join(out)
 
 
-def test_entire_with_memory_installs_the_adapter_outside_the_skill_folders(repo):
-    code, out = install_with_entire(repo, without=frozenset({"sdd", "worktree", "agents", "coders"}))
-    assert code == 0, out
-    script = repo / ".agents/scripts/entire_sessions.py"
-    assert script.read_bytes() == (ASSETS / "scripts/entire_sessions.py").read_bytes()
-    rules = (repo / "AGENTS.md").read_text()
-    assert "python3 .agents/scripts/entire_sessions.py --project . --out memory/sessions" in rules
-    assert "git grep" in rules and "refs/entire/checkpoints" in rules and "does not see them" in rules
-    assert "agemem" not in rules.lower() and "project_memory_remember" not in rules
-    assert not (repo / ".claude/skills/memory-1/scripts/entire_sessions.py").exists()
-
-
-def test_entire_without_memory_has_no_adapter_and_no_session_archive_rules(repo):
-    code, out = install_with_entire(repo, without=frozenset({"memory", "docs", "sdd", "worktree", "agents", "coders"}))
+def test_entire_with_memory_puts_the_flag_in_the_rules_and_installs_no_extra_script(repo):
+    code, out = install_with_entire(repo, entire=True, without=frozenset({"sdd", "worktree", "agents", "coders"}))
     assert code == 0, out
     assert not (repo / ".agents/scripts").exists()
     rules = (repo / "AGENTS.md").read_text()
-    assert "Entire session history" in rules and "entire_sessions.py" not in rules
+    assert "memory/sessions --entire`" in rules and "also adds sessions that only Entire has" in rules
+    assert "Entire session history" in rules and "git grep" in rules and "refs/entire/checkpoints" in rules
+    assert "entire_sessions.py" not in rules and "agemem" not in rules.lower() and "project_memory_remember" not in rules
+    assert b"agentic-loadout:begin entire-code" in (repo / ".claude/skills/memory-1/scripts/export_sessions.py").read_bytes()
 
 
-def test_without_entire_there_is_no_adapter(repo):
-    code, out = full(repo, without=frozenset({"entire"}))
-    assert code == 0 and not (repo / ".agents/scripts").exists()
-    assert "Entire session history" not in (repo / "AGENTS.md").read_text()
+def test_entire_without_memory_has_no_session_archive_rules(repo):
+    code, out = install_with_entire(repo, entire=True, without=frozenset({"memory", "docs", "sdd", "worktree", "agents", "coders"}))
+    assert code == 0, out
+    rules = (repo / "AGENTS.md").read_text()
+    assert "Entire session history" in rules and "--entire" not in rules and "export_sessions" not in rules
+
+
+def test_entire_is_off_by_default_and_the_default_memory_rules_have_no_entire_flag(repo):
+    code, out = full(repo)
+    rules = (repo / "AGENTS.md").read_text()
+    assert code == 0 and "Entire session history" not in rules and "--entire" not in rules
+    assert not (repo / ".entire").exists() and not (repo / ".agents/scripts").exists()
+
+
+def test_without_entire_there_is_no_entire_text(repo):
+    code, _out = full(repo, without=frozenset({"entire"}))
+    assert code == 0 and "Entire" not in (repo / "AGENTS.md").read_text()
 
 
 def test_cli_accepts_the_old_flags_with_a_notice(monkeypatch, repo, capsys):
