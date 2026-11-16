@@ -15,14 +15,18 @@ MIN_VERSION = (0, 10, 0)  # refs storage (refs/entire/checkpoints/) became the d
 TESTED_VERSIONS = "0.12.2 and 0.13.2"
 INSTALL_HELP = ("Install it with `brew install --cask entireio/tap/entire` or `curl -fsSL https://entire.com/install.sh | bash` "
                 "(Windows and other options: https://docs.entire.com/installation), then re-run with --with entire.")
-SKIPPED = "Skipped: checkpoint capture (`entire enable`, its git and client hooks) and the Entire rules."
+SKIPPED = "Skipped: checkpoint capture (`entire enable`, its git and client hooks)"
 
 
-def cli_problem(system: System) -> str | None:
-    """Why the Entire CLI cannot be used (None when it can): missing, or older than the minimum version."""
+def cli_problem(system: System, kept: bool = False) -> str | None:
+    """Why the Entire CLI cannot be used (None when it can): missing, or older than the minimum version.
+    `kept` is True when Entire is on only because the project's rules already have the Entire section, not because it
+    was requested; the message then says that the rules section was kept."""
     minimum = ".".join(map(str, MIN_VERSION))
+    why = "This project's rules already have the Entire section" if kept else "Entire was requested"
+    skipped = f"{SKIPPED}; the existing Entire rules section was kept." if kept else f"{SKIPPED} and the Entire rules."
     if system.which("entire") is None:
-        return f"Entire was requested but the `entire` CLI is not installed. {SKIPPED} {INSTALL_HELP}"
+        return f"{why} but the `entire` CLI is not installed. {skipped} {INSTALL_HELP}"
     try:
         result = system.run(["entire", "--version"])
         match = re.search(r"(\d+)\.(\d+)\.(\d+)", (result.stdout or "") + (result.stderr or ""))
@@ -32,8 +36,8 @@ def cli_problem(system: System) -> str | None:
         return None  # an unreadable version is not proof of an old one; the real commands fail loudly if it is unusable
     found = tuple(int(x) for x in match.groups())
     if found < MIN_VERSION:
-        return (f"Entire was requested but the installed `entire` is {'.'.join(match.groups())}; loadout needs {minimum} or "
-                f"newer (refs storage became the default in {minimum}; {TESTED_VERSIONS} were tested). {SKIPPED} Upgrade it: "
+        return (f"{why} but the installed `entire` is {'.'.join(match.groups())}; loadout needs {minimum} or "
+                f"newer (refs storage became the default in {minimum}; {TESTED_VERSIONS} were tested). {skipped} Upgrade it: "
                 + INSTALL_HELP)
     return None
 

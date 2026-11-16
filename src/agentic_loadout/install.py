@@ -132,6 +132,7 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
                 out: Callable[[str], None] = print) -> int:
     system = system or System()
     ctx = Ctx(opts.project, dry_run=opts.dry_run, force=opts.force)
+    entire_asked = opts.entire
     entire_marker = resolve_entire(ctx, opts)
     # Preflight: ask every question and check every tool before the first write.
     plan = coders.prepare(ctx, opts, prompter, system, opts.with_coders)
@@ -139,7 +140,7 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
     if problems:
         out("Cannot continue:\n" + "\n".join(f"  - {p}" for p in problems))
         return 1
-    entire_problem = entire.cli_problem(system) if opts.wants("entire") else None
+    entire_problem = entire.cli_problem(system, kept=not entire_asked) if opts.wants("entire") else None
     before = git_state.snapshot(opts.project)
     if opts.dry_run:
         out("Dry run. Project scope only; these are the commands and the files they write:")

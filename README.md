@@ -23,7 +23,8 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
 - **Language coders:** `coder-go`, `coder-python`, `coder-typescript` and `coder-swift` come with code-navigation MCPs, so they
   rename and refactor through the compiler or type checker instead of `grep` and `sed`.
 
-Each piece is handed to the tool that already installs it; agentic-loadout only writes what no tool covers.
+memory-1 and docs-1 ship inside agentic-loadout; every other piece is handed to the tool that already installs it, and
+agentic-loadout only writes what no tool covers.
 
 Needs Node.js 20+ for the `sdd-feature` and `worktree` skills and the TypeScript coder, `uv` for the Python coder, and Go
 with gopls for the Go coder. memory-1 and docs-1 need nothing but Python 3 (their scripts use the standard library).
@@ -148,7 +149,7 @@ rewrites an existing file. Details and the reasoning:
 
 A project whose rules already carry the Entire section (an earlier loadout turned it on) keeps Entire on, with a note.
 `--without entire` turns it off: it removes the Entire rules section and leaves `.entire/` and the hooks alone (run
-`entire disable` to remove those). `--no-hooks` skips Entire.
+`entire disable` to turn capture off, or `entire disable --uninstall` to remove them). `--no-hooks` skips Entire.
 
 Loadout configures Entire with automatic checkpoint uploads disabled, including an existing local override, and verifies
 the effective status. Checkpoints stay local unless you explicitly opt in using `--entire-upload-sessions` (which

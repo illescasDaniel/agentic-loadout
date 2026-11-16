@@ -68,8 +68,8 @@ def test_entire_flag_is_not_an_abbreviation_of_the_upload_flag(monkeypatch, repo
 def test_missing_cli_says_how_to_install_it_what_was_skipped_and_the_run_goes_on(repo):
     code, out, executor = run(repo, binaries=("npx",), entire=True)
     assert code == 0, out
-    assert "`entire` CLI is not installed" in out and "brew install --cask entireio/tap/entire" in out
-    assert "https://entire.com/install.sh" in out and "--with entire" in out and "Skipped: checkpoint capture" in out
+    assert "Entire was requested but the `entire` CLI is not installed" in out and "brew install --cask entireio/tap/entire" in out
+    assert "https://entire.com/install.sh" in out and "--with entire" in out and "Skipped: checkpoint capture" in out and "and the Entire rules." in out
     assert not any(c[0] == "entire" for c, _env in executor.calls) and not (repo / ".entire").exists()
     rules = (repo / "AGENTS.md").read_text()
     assert "Entire session history" not in rules and "--entire" not in rules and "Project memory (memory-1)" in rules
@@ -133,7 +133,9 @@ def test_a_marked_project_on_a_machine_without_the_cli_keeps_its_shared_rules(re
     (repo / "AGENTS.md").write_text("# mine\n\n" + MARKER_SECTION)
     code, out, executor = run(repo, binaries=("npx",))
     assert code == 0, out
-    assert "not installed" in out and not any(c[0] == "entire" for c, _env in executor.calls)
+    assert "rules already have the Entire section" in out and "Entire was requested" not in out
+    assert "the existing Entire rules section was kept" in out and "and the Entire rules." not in out
+    assert not any(c[0] == "entire" for c, _env in executor.calls)
     rules = (repo / "AGENTS.md").read_text()
     assert "## Entire session history" in rules and "memory/sessions --entire`" in rules
 
