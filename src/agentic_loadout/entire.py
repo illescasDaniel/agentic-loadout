@@ -18,13 +18,13 @@ INSTALL_HELP = ("Install it with `brew install --cask entireio/tap/entire` or `c
 SKIPPED = "Skipped: checkpoint capture (`entire enable`, its git and client hooks)"
 
 
-def cli_problem(system: System, kept: bool = False) -> str | None:
+def cli_problem(system: System, requested: bool = True, rules_kept: bool = False) -> str | None:
     """Why the Entire CLI cannot be used (None when it can): missing, or older than the minimum version.
-    `kept` is True when Entire is on only because the project's rules already have the Entire section, not because it
-    was requested; the message then says that the rules section was kept."""
+    `requested` is False when Entire is on only because the project's rules already have the Entire section;
+    `rules_kept` is True when that section stays in the rules, so the message says it was not skipped."""
     minimum = ".".join(map(str, MIN_VERSION))
-    why = "This project's rules already have the Entire section" if kept else "Entire was requested"
-    skipped = f"{SKIPPED}; the existing Entire rules section was kept." if kept else f"{SKIPPED} and the Entire rules."
+    why = "Entire was requested" if requested else "This project's rules already have the Entire section"
+    skipped = f"{SKIPPED}; the existing Entire rules section was kept." if rules_kept else f"{SKIPPED} and the Entire rules."
     if system.which("entire") is None:
         return f"{why} but the `entire` CLI is not installed. {skipped} {INSTALL_HELP}"
     try:

@@ -194,7 +194,7 @@ earlier shipped versions to tell the two apart. `--force` replaces them.
 
 Tested:
 
-- Full suite: `uv run --offline pytest -q`, 140 passed (98 before this work). The new tests cover: the vendored files
+- Full suite: `uv run --offline pytest -q`, 141 passed (98 before this work). The new tests cover: the vendored files
   (stripping the marked blocks reproduces the recorded upstream hashes, the manifest equals the files, only overlay-named
   files are adapted, pins are recorded), the sync script against synthetic upstream repositories (apply, idempotence,
   `--check`, `--dry-run`, a newer commit, uncommitted edits ignored, missing and ambiguous anchors, errors), the Entire pass

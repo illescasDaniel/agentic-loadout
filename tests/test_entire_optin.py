@@ -140,6 +140,15 @@ def test_a_marked_project_on_a_machine_without_the_cli_keeps_its_shared_rules(re
     assert "## Entire session history" in rules and "memory/sessions --entire`" in rules
 
 
+def test_asking_for_entire_on_a_marked_project_without_the_cli_says_the_rules_section_was_kept(repo):
+    (repo / "AGENTS.md").write_text("# mine\n\n" + MARKER_SECTION)
+    code, out, _executor = run(repo, binaries=("npx",), entire=True)
+    assert code == 0, out
+    assert "Entire was requested" in out and "the existing Entire rules section was kept" in out
+    assert "and the Entire rules." not in out
+    assert "memory/sessions --entire`" in (repo / "AGENTS.md").read_text()
+
+
 def test_dry_run_with_entire_only_reads_the_version(repo):
     code, out, executor = run(repo, entire=True, dry_run=True)
     assert code == 0 and executor.calls == [] and "would run  entire enable" in out

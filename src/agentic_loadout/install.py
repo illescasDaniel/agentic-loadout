@@ -140,7 +140,7 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
     if problems:
         out("Cannot continue:\n" + "\n".join(f"  - {p}" for p in problems))
         return 1
-    entire_problem = entire.cli_problem(system, kept=not entire_asked) if opts.wants("entire") else None
+    entire_problem = entire.cli_problem(system, requested=entire_asked, rules_kept=entire_marker) if opts.wants("entire") else None
     before = git_state.snapshot(opts.project)
     if opts.dry_run:
         out("Dry run. Project scope only; these are the commands and the files they write:")
