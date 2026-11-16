@@ -7,6 +7,9 @@ A project set up by an earlier state of this package has the same skills install
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 from .agents import ASSETS
 from .agents import SKILL_DIRS as ALL_SKILL_FOLDERS
 from .files import Ctx, read_json, write_bytes, write_json
@@ -14,6 +17,7 @@ from .options import Options
 
 SKILL_DIRS = {"claude": ".claude/skills", "cursor": ".agents/skills", "codex": ".agents/skills"}
 LOCK = "skills-lock.json"
+MANIFEST = ".loadout-manifest.json"  # sha256 of each file as installed, so a later release can tell edits from old copies
 
 
 def vendored_files(name: str) -> dict[str, bytes]:
@@ -35,6 +39,21 @@ def _locked(ctx: Ctx) -> dict:
     return skills if isinstance(skills, dict) else {}
 
 
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _manifest(ctx: Ctx, dest) -> dict[str, str]:
+    path = dest / MANIFEST
+    if not ctx.exists(path):
+        return {}
+    try:
+        data = json.loads(ctx.read(path))
+    except ValueError:
+        return {}
+    return {k: v for k, v in data.items() if isinstance(v, str)} if isinstance(data, dict) else {}
+
+
 def install_skill(ctx: Ctx, opts: Options, name: str) -> bool:
     """Copy the skill into each selected client's folder. Returns True when an `npx skills` copy was replaced everywhere
     it existed, so its lock entry can go (see `drop_lock_entries`)."""
@@ -46,9 +65,24 @@ def install_skill(ctx: Ctx, opts: Options, name: str) -> bool:
         if replaced:
             ctx.remove_tree(dest)
         counts: dict[str, int] = {}
+        before = _manifest(ctx, dest)
         for rel, data in files.items():
-            status = write_bytes(ctx, dest / rel, data, log=False)
+            path = dest / rel
+            if ctx.exists(path) and ctx.read(path) != data and _sha(ctx.read(path)) == before.get(rel):
+                ctx.write(path, data)  # the copy an earlier release installed, not edited since
+                status = "updated"
+            else:
+                status = write_bytes(ctx, path, data, log=False)
             counts[status] = counts.get(status, 0) + 1
+        for rel, digest in before.items():  # files a newer release no longer ships
+            path = dest / rel
+            if rel not in files and ctx.exists(path) and _sha(ctx.read(path)) == digest:
+                ctx.remove_tree(path)
+                counts["removed"] = counts.get("removed", 0) + 1
+        kept = {rel: before[rel] for rel in files if ctx.exists(dest / rel) and ctx.read(dest / rel) != files[rel] and rel in before}
+        manifest = json.dumps({rel: kept.get(rel, _sha(data)) for rel, data in files.items()}, indent=2).encode() + b"\n"
+        if not ctx.exists(dest / MANIFEST) or ctx.read(dest / MANIFEST) != manifest:
+            ctx.write(dest / MANIFEST, manifest)
         summary = f"{len(files)} files" if replaced and set(counts) == {"created"} else ", ".join(f"{n} {s}" for s, n in counts.items())
         shown = dest.relative_to(ctx.project).as_posix() + "/"
         if not replaced and set(counts) == {"unchanged"}:

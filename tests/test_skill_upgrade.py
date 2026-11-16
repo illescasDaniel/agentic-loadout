@@ -35,7 +35,7 @@ def test_npx_copies_are_replaced_stale_files_go_and_their_lock_entries_are_remov
     assert code == 0, out
     for name in ("memory-1", "docs-1"):
         for folder in (".claude/skills", ".agents/skills"):
-            assert {p.relative_to(repo / folder / name).as_posix(): p.read_bytes() for p in (repo / folder / name).rglob("*") if p.is_file()} \
+            assert {p.relative_to(repo / folder / name).as_posix(): p.read_bytes() for p in (repo / folder / name).rglob("*") if p.is_file() and p.name != skills.MANIFEST} \
                 == skills.vendored_files(name)
     assert list(json.loads((repo / "skills-lock.json").read_text())["skills"]) == ["sdd-feature", "worktree"]
     assert executor.calls == [] and "the copy `npx skills` had installed" in out
@@ -103,4 +103,30 @@ def test_without_memory_and_docs_an_npx_state_is_not_touched(repo):
     npx_state(repo)
     before = snapshot(repo)
     code, _out = full(repo, without=LEAN | {"memory", "docs"})
+    assert code == 0 and snapshot(repo) == before
+
+
+def test_a_newer_release_updates_untouched_copies_and_keeps_edited_files(repo, monkeypatch):
+    code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=LEAN)
+    assert code == 0, out
+    dest = repo / ".claude/skills/memory-1"
+    (dest / "scripts/memory_check.py").write_text("my own edit")
+    real = skills.vendored_files
+
+    def newer(name):
+        files = dict(real(name))
+        if name == "memory-1":
+            files["SKILL.md"] = files["SKILL.md"] + b"\nnew release line\n"
+            files["scripts/memory_check.py"] = files["scripts/memory_check.py"] + b"# newer\n"
+            del files["templates/LATER.md"]
+        return files
+
+    monkeypatch.setattr(skills, "vendored_files", newer)
+    code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=LEAN)
+    assert code == 0, out
+    assert (dest / "SKILL.md").read_bytes().endswith(b"new release line\n")
+    assert (dest / "scripts/memory_check.py").read_text() == "my own edit" and "use --force" in out
+    assert not (dest / "templates/LATER.md").exists()
+    before = snapshot(repo)
+    code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=LEAN)
     assert code == 0 and snapshot(repo) == before
