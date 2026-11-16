@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **Breaking:** agemem is no longer installed. Project memory now comes from the [memory-1](https://github.com/illescasDaniel/memory-1-skill)
+  skill and project docs from the [docs-1](https://github.com/illescasDaniel/docs-1-skill) skill, both installed with
+  `npx skills` at pinned commits. The memory rules section is rewritten for plain-file memory; there is no MCP server,
+  hook or `uv` requirement for memory any more. Claude Code's built-in auto-memory is still turned off, unless you set it.
+- The architect, coder and workflow texts no longer name agemem tools.
+- `--without agemem` is accepted as `--without memory` (new: `--without docs`); `--memory-model` is accepted and ignored,
+  both with a notice.
+
+### Added
+- With Entire and memory both installed, `.agents/scripts/entire_sessions.py` fills `memory/sessions/` from the
+  checkpoints Entire keeps in git data (read-only, standard library only).
+- Re-running on a project set up with agemem removes its MCP entries, hooks and `memory-wrapup` skill and lists what it
+  left on disk (`.agemem/`, `memory/*.md` memory-bank files); see the README and `docs/memory-1-docs-1-integration.md`.
+
 ## [0.6.1] - 2026-11-13
 
 - Update agemem to 0.4.0: every recall returns a one-line summaries tier (one `>` abstract per

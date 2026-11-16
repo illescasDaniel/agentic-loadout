@@ -6,7 +6,7 @@ Status: experiments in progress; this document records observations, not an impl
 
 - Entire is an optional loadout component included by default, with an opt-out.
 - Automatic session uploads must be disabled by default. Public transcript upload requires an explicit configuration choice. Do not treat this setting as an enforcement boundary against manual pushes or later configuration changes.
-- Keep agemem as the curated project-memory system; use Entire checkpoints as possible supporting evidence.
+- Keep a curated project-memory system (agemem when this was written; memory-1 since, see [memory-1-docs-1-integration.md](memory-1-docs-1-integration.md)); use Entire checkpoints as supporting evidence.
 - Investigate behavior before implementing the integration.
 
 ## Isolated experiments

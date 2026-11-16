@@ -1,12 +1,12 @@
 [project]
 name = "agentic-loadout"
 version = "0.6.1"
-description = "One command that gives a project an agent setup: memory (agemem), the SDD skill, subagents and language coders with code-navigation MCPs. Project-scoped, for Claude Code, Cursor and Codex."
+description = "One command that gives a project an agent setup: memory and docs skills, the SDD skill, subagents and language coders with code-navigation MCPs. Project-scoped, for Claude Code, Cursor and Codex."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Daniel Illescas Romero", email = "illescas.daniel@protonmail.com" }]
-keywords = ["claude-code", "cursor", "codex", "subagents", "mcp", "memory", "agemem", "sdd"]
+keywords = ["claude-code", "cursor", "codex", "subagents", "mcp", "memory", "docs", "sdd"]
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",

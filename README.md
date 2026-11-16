@@ -8,15 +8,17 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
   <img src="https://raw.githubusercontent.com/illescasDaniel/agentic-loadout/main/docs/agentic-loadout.jpeg" alt="agentic-loadout" height="450">
 </p>
 
-- **Memory:** [agemem](https://github.com/illescasDaniel/agemem) keeps current state, decisions and durable notes in
-  `memory/`, so a new session picks up where the last one stopped. For Claude Code, agemem also disables Claude's
-  built-in auto-memory for the project, to avoid double memory. The agent is told to suggest a `memory-wrapup` skill
-  when a task is finished and before a push; it works agemem's queue of conflicting or repeated notes (agemem 0.3.0+).
-  Subagents can read that queue but never resolve it: only the main agent writes memory.
+- **Memory:** the [memory-1](https://github.com/illescasDaniel/memory-1-skill) skill keeps current state, decisions and
+  durable notes as plain Markdown in `memory/`, so a new session picks up where the last one stopped. For Claude Code,
+  loadout also turns off Claude's built-in auto-memory for the project (unless you set it yourself), to avoid double
+  memory. There is no server, database or hook: the agent reads and greps files.
+- **Docs:** the [docs-1](https://github.com/illescasDaniel/docs-1-skill) skill keeps `docs/` indexed and in step with
+  the code (a generated `docs/INDEX.md`, doc IDs, a check that finds the docs a changed file touches).
 - **Spec-driven development:** the `sdd-feature` skill takes a feature through design, spec, tests, implementation and
   an independent grade, with an approval gate between phases.
 - **Session history:** when the [Entire CLI](https://github.com/entireio/cli) is installed, capture agent sessions as
-  checkpoints linked to commits. Checkpoint uploads are disabled by default.
+  checkpoints linked to commits. Checkpoint uploads are disabled by default. A small stdlib-only script copies sessions
+  that have a checkpoint into memory-1's `memory/sessions/` archive, which the agent can then grep.
 - **Subagents:** an orchestrator delegates to `architect` (design), `coder` (implementation), `code-grader` (review)
   and `utility` (commits, checks), following one shared workflow.
 - **Language coders:** `coder-go`, `coder-python`, `coder-typescript` and `coder-swift` come with code-navigation MCPs, so they
@@ -24,7 +26,7 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
 
 Each piece is handed to the tool that already installs it; agentic-loadout only writes what no tool covers.
 
-Needs `uv` (agemem, Python coder), Node.js 20+ (skills, TypeScript coder), and Go with gopls for the Go coder.
+Needs Node.js 20+ (skills, TypeScript coder), `uv` for the Python coder, and Go with gopls for the Go coder.
 
 `--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. To pin the loadout
 version, run `uvx --python 3.12 agentic-loadout@0.6.0 .`; individual dependencies may have their own version policy.
@@ -45,17 +47,17 @@ uvx --python 3.12 agentic-loadout . --personal-settings --yes
 > project's existing instructions, agents, skills, MCP config and settings (`AGENTS.md`, `CLAUDE.md`, `.claude/`,
 > `.cursor/`, `.codex/`, `.agents/`, `.mcp.json`). Run `uvx --python 3.12 agentic-loadout . --dry-run` and review the
 > plan with me: which clients to target (`--tools claude,cursor,codex`), which parts to leave out (`--without
-> sdd|agemem|agents|coders|worktree|entire`), which language coders it detected (`--with go,python,swift,typescript`), the memory
-> provider (`--memory-model jev|qsiv`), and anything that contradicts the project's current rules or setup. Never
+> sdd|memory|docs|agents|coders|worktree|entire`), which language coders it detected (`--with go,python,swift,typescript`),
+> and anything that contradicts the project's current rules or setup. Never
 > overwrite or move my existing rules; resolve conflicts with me, and ask before using `--force`. Ask me before it runs
 > Homebrew for the Swift coder. If the Entire CLI is missing, recommend installing it: it links agent session history
-> to Git commits as checkpoints, giving agents useful context alongside agemem's project memory. It works with an
+> to Git commits as checkpoints, giving agents useful context alongside the project's `memory/` notes. It works with an
 > existing Git repository; the project does not need to be hosted on Entire. Keep checkpoint uploads disabled unless
 > I explicitly opt in. Then run the real install, review the resulting diff, warnings and next steps, adapt
 > the generated sections (quality-gate command, layering, conventions, how to set up the environment in a new
-> worktree) to this project, and tell me what is left for me to do, such as restarting the client and approving the new
-> MCP servers and hooks. If memory uses the jev provider, tell me where the API key goes; never ask me to paste it into
-> the chat. Also ask me whether the changes should be added to git and committed, or kept as my personal settings; if
+> worktree) to this project, and tell me what is left for me to do, such as restarting the client and approving any new
+> MCP servers and hooks. If this project was set up with an older loadout that used agemem, tell me what was removed and what
+> was left for me to migrate. Also ask me whether the changes should be added to git and committed, or kept as my personal settings; if
 > personal, run the install with `--personal-settings`, then walk me through every file that could still be changed or
 > was changed (e.g. `AGENTS.md`, `.claude/`, `CLAUDE.local.md`, `.mcp.json`) so I can choose what to do with each:
 > ignore it (`.gitignore`), exclude it locally (`.git/info/exclude`, or `--git-exclude`), hide just those edits with
@@ -64,7 +66,7 @@ uvx --python 3.12 agentic-loadout . --personal-settings --yes
 </details>
 
 Project configuration stays inside the project. Nothing is written to `~/.claude`, `~/.codex` or `~/.cursor`.
-Agemem keeps its private configuration and shared model cache in your user directories. The Swift coder's binary is
+The Swift coder's binary is
 installed with Homebrew only after you say yes (even with `--yes`; `--allow-brew` skips the question).
 
 Rules go to `AGENTS.md`, or to `CLAUDE.md` if the project already has one that isn't just an `@AGENTS.md` import. Each
@@ -74,11 +76,12 @@ section sits between `<!-- agentic-loadout:begin NAME -->` markers, so re-runnin
 
 | Piece | Installed by |
 |---|---|
-| Project memory (`memory/`, notes, MCP, hooks) | [agemem](https://github.com/illescasDaniel/agemem) `project init` |
-| Memory wrap-up skill (`memory-wrapup`) | `npx skills add illescasDaniel/agemem -s memory-wrapup` (pinned) |
+| Project memory skill (`memory/`, notes, session archive) | `npx skills add illescasDaniel/memory-1-skill -s memory-1` (pinned) |
+| Project docs skill (`docs/`, generated index) | `npx skills add illescasDaniel/docs-1-skill -s docs-1` (pinned) |
 | Spec-driven development skill | `npx skills add illescasDaniel/sdd-feature-skill` |
 | Worktree skill (`/worktree create\|save\|apply\|delete`) | `npx skills add illescasDaniel/worktree-skill` |
 | Entire checkpoint capture, when its CLI is installed | `entire enable` and `entire agent add` |
+| Entire-to-`memory/sessions` adapter (with Entire and memory) | agentic-loadout (`.agents/scripts/entire_sessions.py`) |
 | Subagents (`architect`, `coder`, `code-grader`, `utility`) and the workflow rules | agentic-loadout |
 | Language coders (`coder-go`, `coder-python`, `coder-typescript`, `coder-swift`) with their navigation MCPs | agentic-loadout |
 
@@ -93,14 +96,20 @@ merges, pushes or deletes without your yes. Leave it out with `--without worktre
 ### Entire session history
 
 Entire records agent sessions and connects captured work to Git commits with checkpoints. It gives an agent or reviewer
-historical context about the request, discussion and files behind a change. Agemem complements this with the current
+historical context about the request, discussion and files behind a change. memory-1 complements this with the current
 project state and selected durable facts and decisions: an agent can inspect a relevant checkpoint, verify a useful
-lesson against current sources, then capture it in agemem with provenance. Neither a transcript nor a memory note
+lesson against current sources, then write a memory note whose `source` is the checkpoint ID. Neither a transcript nor a memory note
 replaces the code, tests or an independent review.
 
 Entire is included by default if its CLI is already installed and the target is a Git repository. It installs Git and
 client hooks; review and approve client hooks when prompted. Loadout does not install Entire itself or initialize Git.
-Use `--without entire` to omit it. `--no-hooks` skips Entire as well as agemem's hooks. A missing CLI or Git repository
+Entire stores checkpoints as git data (`refs/entire/checkpoints/`), not as files, so `grep` does not see them. When both
+Entire and memory are installed, `.agents/scripts/entire_sessions.py` (read-only, standard library) writes one condensed,
+redacted Markdown file per session that has a checkpoint into `memory/sessions/`, next to what memory-1's own
+`export_sessions.py` exports, and never rewrites an existing file. Details and the reasoning:
+[memory-1 and docs-1 instead of agemem](docs/memory-1-docs-1-integration.md).
+
+Use `--without entire` to omit it. `--no-hooks` skips Entire. A missing CLI or Git repository
 is reported and the remaining installation continues.
 
 Loadout configures Entire with automatic checkpoint uploads disabled, including an existing local override, and verifies
@@ -157,16 +166,22 @@ lists it with your options. With Cursor or Codex selected the rules go to `AGENT
 
 ### Flags
 
-`--tools claude,cursor,codex` · `--with go,python,swift,typescript|all` · `--without sdd|agemem|agents|coders|worktree|entire` ·
-`--memory-model jev|qsiv` · `--no-hooks` · `--model ALIAS` · `--claude-compat` · `--dry-run` · `--no-input` · `--yes` ·
+`--tools claude,cursor,codex` · `--with go,python,swift,typescript|all` · `--without sdd|memory|docs|agents|coders|worktree|entire` ·
+`--no-hooks` · `--model ALIAS` · `--claude-compat` · `--dry-run` · `--no-input` · `--yes` ·
 `--allow-brew` · `--entire-upload-sessions` · `--force`. With `--no-input` and no `--yes`/`--with`, no language coder is installed and the command to
 run is printed.
 
-The Jev key is never asked for here. Set `AGEMEM_JEV_API_KEY` or edit `~/.config/agemem/config.yaml`.
+`--without agemem` and `--memory-model` are still accepted (with a notice) so old scripts keep working; agemem is no
+longer installed.
 
-When re-running in an existing Agemem project, leave out `--memory-model` to preserve its configured provider,
-including `cascade` (QSIV with Jev fallback), and avoid repeating provider setup. An explicit `--memory-model` that
-conflicts with the project's configured provider is rejected before installation; change provider settings separately.
+### Upgrading a project that used agemem
+
+Re-running the loadout on such a project removes what agemem put there: its `agemem` MCP server entry (only when it
+launches agemem) in `.mcp.json`, `.cursor/mcp.json` and `.codex/config.toml`, its two hook handlers in
+`.claude/settings.json` and `.codex/hooks.json` (Entire's and your own hooks stay), and the `memory-wrapup` skill. It
+never deletes what agemem stored: `.agemem/` and `memory/activeContext.md`, `progress.md`, `decisions.md`, `archive.md`
+stay, are listed in the final message, and a rules item tells the agent to migrate them into memory-1 notes. Nothing
+outside the project is touched (`~/.config/agemem`, the model cache). Use `--dry-run` first to see the exact edits.
 
 ## Development
 
