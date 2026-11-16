@@ -222,7 +222,8 @@ The archive keeps the detail that notes summarise away. Export past sessions wit
 python3 <skill dir>/scripts/export_sessions.py --project . --out memory/sessions
 ```
 
-It reads Claude Code (`~/.claude/projects/`) and Codex (`~/.codex/sessions/`) transcripts for this project, keeps only
+It reads Claude Code (`~/.claude/projects/`), Codex (`~/.codex/sessions/`) and opencode (its SQLite database,
+read-only) transcripts for this project, keeps only
 user and assistant prose, redacts credential-like strings, and writes one file per session. It prints only the files
 that are new or changed (a session that grew since the last export is rewritten), so it is safe to run every time.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export a project's agent sessions (Claude Code, Codex) to condensed, redacted Markdown.
+"""Export a project's agent sessions (Claude Code, Codex, opencode) to condensed, redacted Markdown.
 
 Keeps only what the user and the assistant said to each other: no tool calls, tool output, reasoning or injected
 instructions. One file per session, named <first date>-<session id prefix>.md. A file is rewritten only when its
@@ -14,7 +14,10 @@ import argparse
 import json
 import os
 import re
+import sqlite3
 import sys
+from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 
 # agentic-loadout:begin entire-import
@@ -24,6 +27,7 @@ import subprocess
 HOME = Path.home()
 CLAUDE_ROOT = Path(os.environ.get("CLAUDE_CONFIG_DIR", HOME / ".claude")) / "projects"
 CODEX_ROOT = Path(os.environ.get("CODEX_HOME", HOME / ".codex")) / "sessions"
+OPENCODE_DB = Path(os.environ.get("XDG_DATA_HOME") or HOME / ".local" / "share") / "opencode" / "opencode.db"
 
 # Injected context rather than conversation.
 SKIP_PREFIXES = (
@@ -114,6 +118,62 @@ def read_codex(path):
                 yield role, event.get("timestamp", ""), text
 
 
+def opencode_db(note=True):
+    """Open opencode's database read-only, or return None (missing, locked or unreadable) with one short note."""
+    if not OPENCODE_DB.is_file():
+        return None
+    try:
+        return sqlite3.connect(OPENCODE_DB.resolve().as_uri() + "?mode=ro", uri=True, timeout=1)
+    except sqlite3.Error as err:
+        if note:
+            print(f"opencode: cannot open its database ({err}); skipped", file=sys.stderr)
+        return None
+
+
+def opencode_sessions(project):
+    """Return ids of opencode's own (not subagent) sessions whose working directory is inside the project."""
+    db = opencode_db()
+    if not db:
+        return []
+    try:
+        with db:
+            rows = db.execute("SELECT id, directory FROM session_v2 WHERE parent_id IS NULL ORDER BY time_created").fetchall()
+    except sqlite3.Error as err:
+        print(f"opencode: cannot read its sessions ({err}); skipped", file=sys.stderr)
+        return []
+    finally:
+        db.close()
+    return [sid for sid, directory in rows if inside(directory, project)]
+
+
+def read_opencode(sid, path):
+    """Yield (role, timestamp, text) from an opencode session; drops reasoning, tool items and compaction summaries."""
+    db = opencode_db(note=False)
+    if not db:
+        return
+    try:
+        with db:
+            rows = db.execute("SELECT type, time_created, data FROM session_message WHERE session_id = ? "
+                              "AND type IN ('user', 'assistant') ORDER BY seq", (sid,)).fetchall()
+    except sqlite3.Error:
+        return
+    finally:
+        db.close()
+    for role, millis, raw in rows:
+        try:
+            data = json.loads(raw)
+            if role == "user":
+                text = data.get("text")
+            else:
+                text = "\n".join(b.get("text", "") for b in data.get("content") or []
+                                 if isinstance(b, dict) and b.get("type") == "text")
+            stamp = datetime.fromtimestamp(millis / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except (ValueError, AttributeError, TypeError, OverflowError, OSError):
+            continue
+        if isinstance(text, str) and text.strip():
+            yield role, stamp, text.strip()
+
+
 def claude_cwd(path):
     with path.open(encoding="utf-8", errors="replace") as fh:
         for _, raw in zip(range(50), fh):
@@ -148,6 +208,7 @@ def find_sessions(project, claude_dirs):
             # Codex stores each subagent and automatic review as its own rollout; only the user's own sessions count.
             if inside(meta.get("cwd"), project) and not (isinstance(meta.get("source"), dict) and "subagent" in meta["source"]):
                 found.append(("codex", path, read_codex))
+    found += [("opencode", OPENCODE_DB, partial(read_opencode, sid)) for sid in opencode_sessions(project)]
     return found
 
 
@@ -160,10 +221,11 @@ def render(client, path, reader, max_chars):
     if not turns or not any(r == "user" for r, _, _ in turns):
         return None, None
     first, last = turns[0][1], turns[-1][1]
-    # Claude Code ids are random UUIDs; Codex ids are time-ordered (UUIDv7), so take their random tail instead.
-    sid = path.stem[-8:] if client == "codex" else path.stem[:8]
+    # Claude Code ids are random UUIDs; Codex and opencode ids are time-ordered, so take their random tail instead.
+    stem = reader.args[0] if client == "opencode" else path.stem  # an opencode session is a row, not a file
+    sid = stem[:8] if client == "claude" else stem[-8:]
     name = f"{first[:10] or 'undated'}-{sid}.md"
-    body = [f"# Session {path.stem} ({client})\n\n{first[:16].replace('T', ' ')} to {last[:16].replace('T', ' ')} UTC, "
+    body = [f"# Session {stem} ({client})\n\n{first[:16].replace('T', ' ')} to {last[:16].replace('T', ' ')} UTC, "
             f"{len(turns)} messages. Tool calls and outputs are not exported.\n"]
     body += [f"### {role} {stamp[:16].replace('T', ' ')}\n{text}\n" for role, stamp, text in turns]
     return name, "\n".join(body)
@@ -371,7 +433,7 @@ def main(argv=None):
         return entire_main(project, out, args)
     # agentic-loadout:end entire-only
     if not sessions:
-        print(f"no Claude Code or Codex sessions found for {project}", file=sys.stderr)
+        print(f"no Claude Code, Codex or opencode sessions found for {project}", file=sys.stderr)
         return 1
     rendered = {}
     for client, path, reader in sessions:

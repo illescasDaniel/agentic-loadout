@@ -10,7 +10,7 @@ One command that gives a project a coding-agent setup, for Claude Code, Cursor a
 
 - **Memory:** the [memory-1](https://github.com/illescasDaniel/memory-1-skill) skill keeps current state, decisions and
   durable notes as plain Markdown in `memory/`, so a new session picks up where the last one stopped. There is no
-  server, database or hook: the agent reads and greps files.
+  server, database or hook: the agent reads and greps files. Its optional session archive exports Claude Code, Codex and opencode transcripts.
 - **Docs:** the [docs-1](https://github.com/illescasDaniel/docs-1-skill) skill keeps `docs/` indexed and in step with
   the code (a generated `docs/INDEX.md`, doc IDs, a check that finds the docs a changed file touches).
 - **Spec-driven development:** the `sdd-feature` skill takes a feature through design, spec, tests, implementation and
@@ -30,7 +30,7 @@ Needs Node.js 20+ for the `sdd-feature` and `worktree` skills and the TypeScript
 with gopls for the Go coder. memory-1 and docs-1 need nothing but Python 3 (their scripts use the standard library).
 
 `--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. To pin the loadout
-version, run `uvx --python 3.12 agentic-loadout@0.7.1 .`; individual dependencies may have their own version policy.
+version, run `uvx --python 3.12 agentic-loadout@0.7.2 .`; individual dependencies may have their own version policy.
 
 > [!NOTE]
 > Claude Code has its own built-in auto memory. To keep one shared memory in the repository (memory-1's `memory/`), turn

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.2] - 2026-11-16
+
+### Added
+- memory-1's session export now reads [opencode](https://opencode.ai) sessions too (from its SQLite database, opened
+  read-only; subagent sessions are skipped), next to Claude Code and Codex (memory-1 at `9572f47`).
+
 ## [0.7.1] - 2026-11-16
 
 Found while upgrading a real project from 0.6.x.

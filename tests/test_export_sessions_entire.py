@@ -26,6 +26,7 @@ def agent_homes(tmp_path_factory, monkeypatch):
     monkeypatch.setattr(exporter, "HOME", home)
     monkeypatch.setattr(exporter, "CLAUDE_ROOT", home / ".claude/projects")
     monkeypatch.setattr(exporter, "CODEX_ROOT", home / ".codex/sessions")
+    monkeypatch.setattr(exporter, "OPENCODE_DB", home / "opencode/opencode.db")
     return home
 
 
@@ -201,7 +202,7 @@ def test_the_pass_only_reads_git_data(repo):
 def test_without_the_flag_entire_checkpoints_are_ignored_and_the_native_behaviour_is_unchanged(repo, capsys):
     commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", session_files(CODEX_ID, "codex", TURNS))
     assert run(repo, entire=False) == 1
-    assert "no Claude Code or Codex sessions found" in capsys.readouterr().err and not (repo / "memory").exists()
+    assert "no Claude Code, Codex or opencode sessions found" in capsys.readouterr().err and not (repo / "memory").exists()
 
 
 def test_native_sessions_are_exported_first_and_entire_adds_only_what_is_missing(repo, capsys):
