@@ -25,6 +25,8 @@
   no longer fetched with `npx skills`. A project that had them from `npx skills` gets one copy: the npx copy is replaced and
   its `skills-lock.json` entry removed. Node.js is needed only for the `sdd-feature` and `worktree` skills and the
   TypeScript coder.
+- Each installed skill folder gets a `.loadout-manifest.json` with the hash of every file, so a later release updates
+  the files you did not edit and keeps the ones you did (`--force` overwrites those too).
 - Entire needs CLI 0.10.0 or newer (0.12.2 and 0.13.2 were tested). A missing or older CLI is reported with install
   instructions and what was skipped; the run continues.
 - The architect, coder and workflow texts no longer name agemem tools.
