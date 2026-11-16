@@ -3,24 +3,22 @@ failure is the recovery path."""
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from pathlib import Path
 
-from . import coders, entire, git_state, pins
-from .agents import ASSETS, install_agents, install_tier_agents
+from . import coders, entire, git_state, legacy, pins
+from .agents import ASSETS, SKILL_DIRS as AGENT_SKILL_DIRS, install_agents, install_tier_agents
 from .brew import System
-from .files import Ctx, read_json, write_json
+from .files import Ctx, read_json, write_bytes, write_json
 from .instructions import Section, apply_sections
-from .mcp_config import servers_in
 from .options import Options
 from .preflight import check
-from .runners import Executor, agemem_command, default_executor, run, skills_command, skills_env
+from .runners import Executor, default_executor, run, skills_command, skills_env
 from .ui import Prompter
 from .vendors import VENDORS, workflow_path
 
-AGEMEM_WRITES = {"claude": [".mcp.json", ".claude/settings.json"], "cursor": [".cursor/mcp.json"],
-                 "codex": [".codex/config.toml", ".codex/hooks.json"]}  # checked in Phase 0 (docs/original-implementation-plan.md §8a)
-AGEMEM_PERSONAL_WRITES = {**AGEMEM_WRITES, "claude": [".mcp.json", ".claude/settings.local.json"]}  # --local-settings
+ENTIRE_SESSIONS_SCRIPT = ".agents/scripts/entire_sessions.py"
 SKILL_DIRS = {"claude": ".claude/skills", "cursor": ".agents/skills", "codex": ".agents/skills"}
 
 
@@ -42,26 +40,59 @@ def _rules(opts: Options) -> list[Section]:
     return sections
 
 
+def _template(name: str) -> str:
+    return (ASSETS / "templates" / name).read_text(encoding="utf-8").strip()
+
+
+def skill_dir(opts: Options) -> str:
+    """Where the project-local skills live for the first selected client (the others get identical copies)."""
+    return SKILL_DIRS[opts.selected()[0]]
+
+
+def memory_present(project: Path) -> bool:
+    """memory-1 is the project's memory: its skill is installed, or its status file exists."""
+    return (project / "memory" / "NOW.md").is_file() or any(
+        (project / folder / pins.MEMORY_SKILL_NAME / "SKILL.md").is_file() for folder in AGENT_SKILL_DIRS)
+
+
 def _tail_rules(opts: Options) -> list[Section]:
     sections = []
-    if opts.wants("agemem"):
-        sections.append(Section("memory", (ASSETS / "templates" / "memory-rules.md").read_text(encoding="utf-8").strip()))
+    if opts.wants("memory"):
+        old = _template("memory-legacy.md") if legacy.has_legacy_memory(opts.project) else ""
+        body = _template("memory-rules.md").replace("{{LEGACY}}", old).replace("{{SKILL_DIR}}", skill_dir(opts))
+        sections.append(Section("memory", re.sub(r"\n{3,}", "\n\n", body)))
+    if opts.wants("docs"):
+        sections.append(Section("docs", _template("docs-rules.md").replace("{{SKILL_DIR}}", skill_dir(opts))))
     if opts.wants("sdd"):
-        sections.append(Section("sdd", (ASSETS / "templates" / "sdd-rules.md").read_text(encoding="utf-8").strip()))
+        sections.append(Section("sdd", _template("sdd-rules.md")))
     if opts.wants("worktree"):
-        sections.append(Section("worktree", (ASSETS / "templates" / "worktree-rules.md").read_text(encoding="utf-8").strip()))
+        sections.append(Section("worktree", _template("worktree-rules.md")))
     return sections
 
 
+def _entire_rules(opts: Options) -> Section:
+    sessions = "\n" + _template("entire-sessions.md") + "\n" if opts.wants("memory") else ""
+    return Section("entire", _template("entire-rules.md").replace("{{SESSIONS}}", sessions))
+
+
 def install_settings(ctx: Ctx, opts: Options) -> None:
-    """Claude Code only: `--model`. (agemem itself turns Claude's auto-memory off.)"""
-    if "claude" not in opts.tools or not opts.model:
+    """Claude Code only: `--model`, and turning off Claude's built-in auto-memory when memory-1 is the project's memory."""
+    if "claude" not in opts.tools:
         return
-    target = ctx.project / ".claude" / ("settings.local.json" if opts.personal_settings else "settings.json")
+    shared, personal = (ctx.project / ".claude" / n for n in ("settings.json", "settings.local.json"))
+    target = personal if opts.personal_settings else shared
     data, indent = read_json(target, ctx)
-    if data.get("model") != opts.model:
+    changes = []
+    if opts.model and data.get("model") != opts.model:
         data["model"] = opts.model
-        write_json(ctx, target, data, indent, [f"model={opts.model}"])
+        changes.append(f"model={opts.model}")
+    # A value the user set in either project settings file is left alone (agemem used to do the same).
+    if opts.wants("memory") and "autoMemoryEnabled" not in data and not any(
+            "autoMemoryEnabled" in read_json(p, ctx)[0] for p in (shared, personal) if p != target):
+        data["autoMemoryEnabled"] = False
+        changes.append("autoMemoryEnabled=false")
+    if changes:
+        write_json(ctx, target, data, indent, changes)
 
 
 def summary(ctx: Ctx, opts: Options, report: git_state.Report | None, out: Callable[[str], None]) -> None:
@@ -86,9 +117,6 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
                 out: Callable[[str], None] = print) -> int:
     system = system or System()
     ctx = Ctx(opts.project, dry_run=opts.dry_run, force=opts.force)
-    existing_memory = (opts.project / ".agemem/config.json").is_file()
-    if opts.wants("agemem") and opts.memory_model is None and not existing_memory:
-        opts.memory_model = prompter.ask("Agemem decision provider (jev needs an API key later, qsiv runs locally)", ("jev", "qsiv"), "jev")
     # Preflight: ask every question and check every tool before the first write.
     plan = coders.prepare(ctx, opts, prompter, system, opts.with_coders)
     problems = check(opts, plan.keys)
@@ -99,19 +127,15 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
     if opts.dry_run:
         out("Dry run. Project scope only; these are the commands and the files they write:")
     try:
-        if opts.wants("agemem"):
-            run(agemem_command(opts), opts, executor, ctx.lines.append)
-            writes = AGEMEM_PERSONAL_WRITES if opts.personal_settings else AGEMEM_WRITES
-            ctx.lines.append(f"             writes {_writes(writes, opts.selected(), 'memory/', '.agemem/')}")
-            if opts.memory_model == "jev":
-                ctx.note("Memory with the jev provider needs an API key: set AGEMEM_JEV_API_KEY in your environment or "
-                         "put it in ~/.config/agemem/config.yaml (agemem created that file). Never paste it into a chat.")
-            elif opts.memory_model is None:
-                ctx.note("Preserved the existing Agemem provider configuration.")
-        if opts.wants("agemem"):
-            run(skills_command(opts, pins.MEMORY_WRAPUP_SKILL, pins.MEMORY_WRAPUP_SKILL_REF, pins.MEMORY_WRAPUP_SKILL_NAME),
+        if opts.wants("memory"):
+            legacy.migrate(ctx, opts, executor)
+            run(skills_command(opts, pins.MEMORY_SKILL, pins.MEMORY_SKILL_REF, pins.MEMORY_SKILL_NAME),
                 opts, executor, ctx.lines.append, skills_env())
-            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.MEMORY_WRAPUP_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
+            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.MEMORY_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
+        if opts.wants("docs"):
+            run(skills_command(opts, pins.DOCS_SKILL, pins.DOCS_SKILL_REF, pins.DOCS_SKILL_NAME),
+                opts, executor, ctx.lines.append, skills_env())
+            ctx.lines.append(f"             writes {_writes(_skill_writes(pins.DOCS_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
         if opts.wants("sdd"):
             run(skills_command(opts), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.SDD_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
@@ -121,12 +145,14 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
         entire_enabled = entire.install(ctx, opts, executor, system.which("entire") is not None)
         sections = _rules(opts)
         if entire_enabled:
-            sections.append(Section("entire", (ASSETS / "templates" / "entire-rules.md").read_text(encoding="utf-8").strip()))
+            sections.append(_entire_rules(opts))
+            if opts.wants("memory"):
+                write_bytes(ctx, ctx.project / ENTIRE_SESSIONS_SCRIPT, (ASSETS / "scripts" / "entire_sessions.py").read_bytes())
         if opts.wants("agents"):
-            install_agents(ctx, opts.selected(), opts.wants("sdd"), opts.wants("agemem"))
+            install_agents(ctx, opts.selected(), opts.wants("sdd"), opts.wants("memory"))
         if opts.wants("agents") or plan.keys:
-            install_tier_agents(ctx, opts.selected(), opts.wants("agemem"), opts.wants("agents"), True)
-        sections += coders.install(ctx, opts, plan, system, opts.wants("agemem"))
+            install_tier_agents(ctx, opts.selected(), opts.wants("memory"), opts.wants("agents"), True)
+        sections += coders.install(ctx, opts, plan, system, opts.wants("memory"))
         sections += _tail_rules(opts)
         apply_sections(ctx, opts.selected(), opts.personal_settings, sections, opts.claude_compat)
         install_settings(ctx, opts)
@@ -151,9 +177,9 @@ def _run_coders(opts: Options, requested: list[str] | None, list_only: bool, pro
     if list_only:
         out(coders.list_coders(ctx, opts))
         return 0
-    memory = "agemem" in servers_in(ctx, opts.selected()[0]) or (opts.project / ".agemem").is_dir()
+    memory = memory_present(opts.project)
     plan = coders.prepare(ctx, opts, prompter, system, requested)
-    problems = check(Options(opts.project, opts.tools, without=frozenset({"agemem", "sdd"}), memory_model=opts.memory_model), plan.keys)
+    problems = check(Options(opts.project, opts.tools, without=frozenset({"memory", "docs", "sdd", "worktree"})), plan.keys)
     if problems:
         out("Cannot continue:\n" + "\n".join(f"  - {p}" for p in problems))
         return 1

@@ -21,7 +21,7 @@ def go_available(monkeypatch):
 
 def test_install_tiers_for_all_clients_and_preserve_customizations(repo):
     opts = dict(tools=("claude", "cursor", "codex"), with_coders=["python"],
-                without=frozenset({"agemem", "sdd", "worktree"}))
+                without=frozenset({"memory", "docs", "sdd", "worktree"}))
     code, output = full(repo, **opts)
     assert code == 0, output
     claude = (repo / ".claude/agents/coder-python-small.md").read_text()
@@ -48,7 +48,7 @@ def test_install_tiers_for_all_clients_and_preserve_customizations(repo):
 
 def test_all_small_coders_set_high_effort(repo):
     code, output = full(repo, tools=("claude", "codex"), with_coders=["python", "typescript", "swift"],
-                        without=frozenset({"agemem", "sdd", "worktree"}))
+                        without=frozenset({"memory", "docs", "sdd", "worktree"}))
     assert code == 0, output
     for name in ("coder-small", "coder-python-small", "coder-typescript-small", "coder-swift-small"):
         claude = yaml.safe_load((repo / f".claude/agents/{name}.md").read_text().split("---", 2)[1])
@@ -64,14 +64,14 @@ def test_standalone_coder_and_without_agents(repo):
     assert (repo / ".claude/agents/code-reviewer.md").exists()
     assert not (repo / ".claude/agents/coder-small.md").exists()
     assert "delegation-tiers.md" in (repo / "AGENTS.md").read_text()
-    code, output = full(repo, with_coders=["python"], without=frozenset({"agents", "sdd", "agemem", "worktree"}))
+    code, output = full(repo, with_coders=["python"], without=frozenset({"agents", "sdd", "memory", "docs", "worktree"}))
     assert code == 0, output
     assert not (repo / ".claude/agents/coder-small.md").exists()
 
 
 def test_dry_run_does_not_install_tiers(repo):
     code, output = full(repo, with_coders=["python"], dry_run=True,
-                        without=frozenset({"sdd", "agemem", "worktree"}))
+                        without=frozenset({"sdd", "memory", "docs", "worktree"}))
     assert code == 0 and "coder-python-small" in output
     assert not (repo / ".claude").exists()
 
@@ -81,7 +81,7 @@ def test_existing_agent_outputs_match_baseline(repo):
     from pathlib import Path
 
     code, output = full(repo, tools=("claude", "cursor", "codex"), with_coders=["python"],
-                        without=frozenset({"agemem", "sdd", "worktree"}))
+                        without=frozenset({"memory", "docs", "sdd", "worktree"}))
     assert code == 0, output
     baseline = json.loads((Path(__file__).parent / "baseline-agent-hashes.json").read_text())
     for path, digest in baseline.items():

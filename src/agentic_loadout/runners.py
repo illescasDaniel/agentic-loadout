@@ -15,17 +15,6 @@ SKILLS_AGENT_NAMES = {"claude": "claude-code", "cursor": "cursor", "codex": "cod
 Executor = Callable[[Sequence[str], Path, dict[str, str]], subprocess.CompletedProcess]
 
 
-def agemem_command(opts: Options) -> list[str]:
-    cmd = ["uvx", "--python", pins.AGEMEM_PYTHON, pins.AGEMEM, "project", "init", "--mcp", *opts.selected()]
-    if opts.memory_model is not None:
-        cmd += ["--model", opts.memory_model]
-    if opts.no_hooks:
-        cmd.append("--no-hooks")
-    if opts.personal_settings:
-        cmd.append("--local-settings")
-    return [*cmd, "--no-input"]
-
-
 def skills_command(opts: Options, repo: str = pins.SDD_SKILL, ref: str = pins.SDD_SKILL_REF, skill: str | None = None) -> list[str]:
     cmd = ["npx", "-y", pins.SKILLS, "add", f"{repo}#{ref}"]
     if skill:  # for repos that hold several skills: install only this one
@@ -34,6 +23,11 @@ def skills_command(opts: Options, repo: str = pins.SDD_SKILL, ref: str = pins.SD
         cmd += ["-a", SKILLS_AGENT_NAMES[tool]]
     # --copy: no symlink may point outside the project. Never -g (global).
     return [*cmd, "-y", "--copy"]
+
+
+def skills_remove_command(skill: str) -> list[str]:
+    """Project scope only (no -g); removes the skill from every agent folder of this project and from skills-lock.json."""
+    return ["npx", "-y", pins.SKILLS, "remove", skill, "-y"]
 
 
 def skills_env() -> dict[str, str]:

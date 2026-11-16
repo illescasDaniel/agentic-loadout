@@ -17,7 +17,7 @@ pytestmark = pytest.mark.skipif(shutil.which("entire") is None, reason="Entire C
 
 def install_entire(repo, **kwargs):
     opts = Options(project=repo, tools=["codex", "cursor"], no_input=True, yes=True,
-                   without=frozenset({"agemem", "agents", "coders", "sdd", "worktree"}), **kwargs)
+                   without=frozenset({"memory", "docs", "agents", "coders", "sdd", "worktree"}), **kwargs)
     output = []
     result = run_install(opts, Prompter(yes=True, no_input=True), make_system(binaries=("entire",))[0], out=output.append)
     return result, "\n".join(output)

@@ -10,7 +10,7 @@ from pathlib import Path
 from . import __version__
 from .coders import parse_languages
 from .install import run_coders, run_install
-from .options import COMPONENTS, Options
+from .options import ALIASES, COMPONENTS, Options
 from .ui import Prompter
 from .vendors import detect_tools, parse_tools
 
@@ -29,14 +29,14 @@ def _common(p: argparse.ArgumentParser) -> None:
 
 
 def main_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="agentic-loadout", description="Set up memory, skills, subagents and language coders in a project.",
+    p = argparse.ArgumentParser(prog="agentic-loadout", description="Set up memory, docs, skills, subagents and language coders in a project.",
                                 epilog="Run `agentic-loadout coders --help` to add language coders on their own.")
     p.add_argument("path", nargs="?", default=".", help="project root (default: .)")
     _common(p)
     p.add_argument("--with", dest="with_", metavar="LANGS", help="language coders: go,python,swift,typescript or all (default: detect and confirm)")
     p.add_argument("--without", metavar="PARTS", help=f"leave parts out: {','.join(COMPONENTS)}")
-    p.add_argument("--memory-model", choices=("jev", "qsiv"), help="agemem provider for new setup (existing projects keep their provider when omitted)")
-    p.add_argument("--no-hooks", action="store_true", help="skip agemem hooks and Entire checkpoint capture")
+    p.add_argument("--memory-model", choices=("jev", "qsiv"), help=argparse.SUPPRESS)  # agemem is gone; accepted and ignored
+    p.add_argument("--no-hooks", action="store_true", help="skip Entire checkpoint capture (its git and client hooks)")
     p.add_argument("--entire-upload-sessions", action="store_true", help="explicitly enable Entire checkpoint uploads; transcripts may be public")
     p.add_argument("--model", help="Claude project model alias for .claude/settings.json (settings.local.json with --personal-settings)")
     return p
@@ -69,11 +69,14 @@ def main(argv: list[str] | None = None) -> int:
         return run_coders(opts, requested, args.list, Prompter(opts.yes, opts.no_input))
     args = main_parser().parse_args(argv)
     opts = _options(args, args.path)
-    parts = [p.strip().lower() for p in (args.without or "").split(",") if p.strip()]
+    parts = [ALIASES.get(p, p) for p in (p.strip().lower() for p in (args.without or "").split(",")) if p]
+    if args.memory_model or "agemem" in (args.without or "").lower():
+        print("note: agemem is no longer installed (memory is the memory-1 skill); --memory-model is ignored and "
+              "--without agemem now means --without memory.", file=sys.stderr)
     unknown = [p for p in parts if p not in COMPONENTS]
     if unknown:
         raise SystemExit(f"error: --without takes {', '.join(COMPONENTS)} (got {', '.join(unknown)})")
-    opts.without, opts.memory_model, opts.no_hooks, opts.model = frozenset(parts), args.memory_model, args.no_hooks, args.model
+    opts.without, opts.no_hooks, opts.model = frozenset(parts), args.no_hooks, args.model
     opts.entire_upload_sessions = args.entire_upload_sessions
     if opts.entire_upload_sessions and ("entire" in parts or opts.no_hooks):
         raise SystemExit("error: --entire-upload-sessions requires Entire and hooks")

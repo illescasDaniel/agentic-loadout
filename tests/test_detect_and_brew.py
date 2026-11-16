@@ -36,7 +36,7 @@ def test_go_mod_is_detected(tmp_path):
 
 
 def test_go_coder_requires_go_at_preflight(tmp_path):
-    opts = Options(project=tmp_path, without=frozenset({"agemem", "sdd", "worktree"}))
+    opts = Options(project=tmp_path, without=frozenset({"memory", "docs", "sdd", "worktree"}))
     assert any("`go` not found" in message for message in check(opts, ["go"], which=lambda _: None))
 
 

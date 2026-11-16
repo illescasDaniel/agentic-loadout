@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 from . import pins
-from .agents import ASSETS, write_agent
+from .agents import ASSETS, without_memory, write_agent
 from .brew import BrewPlan, System, plan_swift, run_plan, swift_binary_path
 from .detect import detect_languages
 from .files import Ctx
@@ -164,9 +164,9 @@ def parse_languages(values: list[str]) -> list[str]:
 def agent_bytes(coder: Coder, memory: bool, small: bool = False) -> bytes:
     """The coder's agent file (Claude format): generic `coder.md` + the language's navigation section + MCP tools."""
     fields, body = _split((ASSETS / "agents" / "coder.md").read_text(encoding="utf-8"))
+    body = body if memory else without_memory(body)
     builtin = ("Read", "Edit", "Write", "Glob", "Grep", "Bash")
-    recall = ("mcp__agemem__project_memory_recall",) if memory else ()
-    tools = ", ".join((*builtin, *recall, *(f"mcp__{coder.server_key}__{t}" for t in coder.tools)))
+    tools = ", ".join((*builtin, *(f"mcp__{coder.server_key}__{t}" for t in coder.tools)))
     fields = {k: v for k, v in fields.items() if k not in ("name", "description", "disallowedTools")}
     fields["tools"] = tools
     name = coder.agent + ("-small" if small else "")

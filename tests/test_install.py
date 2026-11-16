@@ -4,7 +4,7 @@ import subprocess
 from agentic_loadout import coders, install, pins, preflight
 from agentic_loadout.files import Ctx
 from agentic_loadout.options import Options
-from agentic_loadout.runners import agemem_command, skills_command
+from agentic_loadout.runners import skills_command
 from tests.conftest import FakeExecutor, make_system, prompter
 
 
@@ -14,7 +14,7 @@ def porcelain(repo):
 
 def full(repo, tools=("claude",), executor=None, out=None, **kw):
     kw = {"yes": True, "no_input": True, **kw}
-    opts = Options(project=repo, tools=list(tools), memory_model="jev", **kw)
+    opts = Options(project=repo, tools=list(tools), **kw)
     lines = out if out is not None else []
     code = install.run_install(opts, prompter(yes=opts.yes, no_input=opts.no_input), make_system()[0], executor or FakeExecutor(), lines.append)
     return code, "\n".join(lines)
@@ -26,9 +26,7 @@ def with_python_and_web(repo):
 
 
 def test_commands_are_project_scoped_and_pinned(repo):
-    opts = Options(project=repo, tools=["claude", "cursor"], memory_model="qsiv", no_hooks=True)
-    assert agemem_command(opts) == ["uvx", "--python", "3.12", "agemem@0.4.0", "project", "init", "--mcp", "claude", "cursor",
-                                    "--model", "qsiv", "--no-hooks", "--no-input"]
+    opts = Options(project=repo, tools=["claude", "cursor"], no_hooks=True)
     skills = skills_command(opts)
     assert "-g" not in skills and "--global" not in skills and "--copy" in skills and "skills@1.7.4" in skills
     assert skills.count("-a") == 2 and "claude-code" in skills and any("#" in part for part in skills)
@@ -71,7 +69,7 @@ def test_given_dry_run_then_nothing_runs_or_changes(repo):
     before = porcelain(repo)
     code, out = full(repo, executor=executor, dry_run=True)
     assert code == 0 and executor.calls == [] and porcelain(repo) == before
-    assert "would run  uvx" in out and "would create .claude/agents/coder-python.md" in out
+    assert "would run  npx" in out and "would create .claude/agents/coder-python.md" in out
 
 
 def test_given_full_install_then_no_jevmem_anywhere_and_grader_comes_from_the_skill(repo):
@@ -83,22 +81,26 @@ def test_given_full_install_then_no_jevmem_anywhere_and_grader_comes_from_the_sk
     for path in (repo / ".claude").rglob("*.md"):
         assert "jevmem" not in path.read_text().lower(), path
     assert "jevmem" not in (repo / ".agents/development-workflow.md").read_text().lower()
-    assert not (repo / ".claude/settings.json").exists()
-    assert "Project memory with Agemem" in (repo / "AGENTS.md").read_text()
+    assert json.loads((repo / ".claude/settings.json").read_text()) == {"autoMemoryEnabled": False}
+    rules = (repo / "AGENTS.md").read_text()
+    assert "## Project memory (memory-1)" in rules and "## Project docs (docs-1)" in rules
+    assert "agemem" not in rules.lower() and "project_memory" not in rules
 
 
-def test_given_without_sdd_and_agemem_then_neither_runs_and_agents_have_no_memory_tools(repo):
+def test_given_without_memory_docs_and_sdd_then_nothing_runs_and_agents_do_not_mention_memory(repo):
     executor = FakeExecutor()
-    code, out = full(repo, executor=executor, without=frozenset({"sdd", "agemem", "coders", "worktree"}))
+    code, out = full(repo, executor=executor, without=frozenset({"sdd", "memory", "docs", "coders", "worktree"}))
     assert code == 0, out
     assert executor.calls == [] and not (repo / ".claude/agents/code-grader.md").exists()
-    assert "agemem" not in (repo / ".claude/agents/coder.md").read_text()
+    assert not (repo / ".claude/settings.json").exists()
+    for name in ("coder", "architect", "code-reviewer"):
+        assert "memory/" not in (repo / f".claude/agents/{name}.md").read_text().replace("Never write to `memory/`", ""), name
     assert "Phase Gate" not in (repo / "AGENTS.md").read_text()
 
 
 def test_given_missing_uvx_then_preflight_fails_before_any_write(repo, monkeypatch):
-    opts = Options(project=repo, memory_model="jev")
-    problems = preflight.check(opts, [], which=lambda name: None)
+    opts = Options(project=repo)
+    problems = preflight.check(opts, ["python"], which=lambda name: None)
     assert any("uvx" in p for p in problems) and any("npx" in p for p in problems)
     monkeypatch.setattr(install, "check", lambda *_a, **_k: problems)
     executor = FakeExecutor()
@@ -113,41 +115,6 @@ def test_given_rerun_then_nothing_changes(repo):
     code, out = full(repo)
     assert code == 0, out
     assert {p: p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git" not in p.relative_to(repo).parts} == snapshot
-
-
-def test_existing_memory_provider_is_preserved_without_a_prompt(repo):
-    memory = repo / ".agemem"
-    memory.mkdir()
-    config = memory / "config.json"
-    original = '{"decision_backend":"cascade","project_id":"existing"}\n'
-    config.write_text(original)
-    opts = Options(project=repo, tools=["codex"], without=frozenset({"sdd", "worktree", "agents", "coders", "entire"}))
-    prompt = prompter()
-    executor = FakeExecutor()
-    output = []
-    assert install.run_install(opts, prompt, make_system()[0], executor, output.append) == 0
-    assert not prompt.asked
-    assert "--model" not in executor.calls[0][0]
-    assert config.read_text() == original
-    assert "Preserved the existing Agemem provider" in "\n".join(output)
-
-
-def test_existing_memory_can_follow_user_provider_without_forcing_jev(repo):
-    (repo / ".agemem").mkdir()
-    (repo / ".agemem/config.json").write_text('{"project_id":"existing"}\n')
-    opts = Options(project=repo, tools=["codex"], no_input=True, without=frozenset({"sdd", "worktree", "agents", "coders", "entire"}))
-    executor = FakeExecutor()
-    assert install.run_install(opts, prompter(no_input=True), make_system()[0], executor) == 0
-    assert "--model" not in executor.calls[0][0]
-
-
-def test_explicit_conflicting_memory_model_fails_before_writes(repo):
-    (repo / ".agemem").mkdir()
-    (repo / ".agemem/config.json").write_text('{"decision_backend":"cascade"}\n')
-    executor = FakeExecutor()
-    code, out = full(repo, executor=executor)
-    assert code == 1 and "conflicts" in out and "leave out --memory-model" in out
-    assert executor.calls == []
 
 
 def run_coders(repo, requested, tools=("claude",), system=None, answers=(), **kw):
@@ -232,24 +199,11 @@ def test_given_tracked_skills_lock_edited_by_skills_then_it_is_explained(repo):
     assert "skills-lock.json: already tracked by git" in out
 
 
-def test_given_personal_settings_then_agemem_writes_local_claude_settings(repo):
-    opts = Options(project=repo, tools=["claude"], memory_model="jev", personal_settings=True)
-    assert agemem_command(opts)[-2:] == ["--local-settings", "--no-input"]
-    assert "--local-settings" not in agemem_command(Options(project=repo, tools=["claude"], memory_model="jev"))
-
-
 def test_given_shared_mode_then_no_absolute_path_warning(repo):
     code, out = full(repo, dry_run=True)
     assert code == 0, out
     assert "absolute project path" not in out
     assert ".claude/settings.json" in out and ".claude/settings.local.json" not in out
-
-
-def test_given_yes_then_memory_model_is_not_asked(repo):
-    opts = Options(project=repo, yes=True)
-    p = prompter(yes=True)
-    install.run_install(opts, p, make_system()[0], FakeExecutor(), lambda _l: None)
-    assert opts.memory_model == "jev" and not p.asked
 
 
 def test_given_worktree_component_then_skill_is_installed_pinned_and_rules_added(repo):
@@ -271,28 +225,3 @@ def test_given_without_worktree_then_neither_skill_nor_rules(repo):
     assert "Isolated worktrees" not in (repo / "AGENTS.md").read_text()
 
 
-def test_given_agemem_then_wrapup_skill_is_installed_pinned_and_only_that_skill(repo):
-    executor = FakeExecutor()
-    code, out = full(repo, executor=executor)
-    assert code == 0, out
-    cmd = next(c for c, _env in executor.calls if f"{pins.MEMORY_WRAPUP_SKILL}#{pins.MEMORY_WRAPUP_SKILL_REF}" in c)
-    assert cmd[cmd.index("-s") + 1] == pins.MEMORY_WRAPUP_SKILL_NAME and "-g" not in cmd and "--copy" in cmd
-    assert "memory-wrapup" in (repo / "AGENTS.md").read_text()
-
-
-def test_given_without_agemem_then_no_wrapup_skill(repo):
-    executor = FakeExecutor()
-    code, out = full(repo, executor=executor, without=frozenset({"agemem"}))
-    assert code == 0, out
-    assert not any(pins.MEMORY_WRAPUP_SKILL in " ".join(c) for c, _env in executor.calls)
-
-
-def test_given_subagents_then_memory_writers_including_queue_tools_are_denied():
-    import re
-    from agentic_loadout.agents import ASSETS
-    for name in ("architect.md", "code-grader.head.md", "coder.md", "tiers/code-reviewer.md"):
-        line = next(l for l in (ASSETS / "agents" / name).read_text(encoding="utf-8").splitlines() if l.startswith("disallowedTools:"))
-        denied = set(re.findall(r"mcp__agemem__(\w+)", line))
-        assert {"project_memory_capture", "project_memory_remember", "project_memory_index", "project_memory_maintain",
-                "project_memory_resolve", "project_memory_dismiss"} <= denied, name
-        assert "project_memory_pending" not in denied and "project_memory_recall" not in denied, name

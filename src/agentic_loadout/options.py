@@ -5,7 +5,8 @@ from pathlib import Path
 
 from .vendors import TOOLS
 
-COMPONENTS = ("sdd", "agemem", "agents", "coders", "worktree", "entire")
+COMPONENTS = ("sdd", "memory", "docs", "agents", "coders", "worktree", "entire")
+ALIASES = {"agemem": "memory"}  # loadout 0.6.x name; `--without agemem` keeps working
 
 
 @dataclass
@@ -14,7 +15,6 @@ class Options:
     tools: list[str] = field(default_factory=lambda: ["claude"])
     with_coders: list[str] | None = None  # None: detect and confirm; [] with "coders" in `without`: skip
     without: frozenset[str] = frozenset()
-    memory_model: str | None = None
     no_hooks: bool = False
     entire_upload_sessions: bool = False
     personal_settings: bool = False

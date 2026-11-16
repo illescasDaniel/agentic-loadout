@@ -1,7 +1,5 @@
 """Every external version in one place, so a release updates one file."""
 
-AGEMEM = "agemem@0.4.0"  # 0.4.0: recall summaries tier (one line per memory file), path-scoped recall
-AGEMEM_PYTHON = "3.12"
 SKILLS = "skills@1.7.4"
 SDD_SKILL = "illescasDaniel/sdd-feature-skill"
 SDD_SKILL_REF = "5443fe57ff5f0fef25d8a76f75dae64953bb9e7b"
@@ -9,9 +7,13 @@ SDD_SKILL_NAME = "sdd-feature"
 WORKTREE_SKILL = "illescasDaniel/worktree-skill"
 WORKTREE_SKILL_REF = "37674c26b84eca9df37d8dafccc367da7455d079"
 WORKTREE_SKILL_NAME = "worktree"
-MEMORY_WRAPUP_SKILL = "illescasDaniel/agemem"  # monorepo: only the `memory-wrapup` skill is installed
-MEMORY_WRAPUP_SKILL_REF = "84f8f76959d64367ab52c334f671766a81dcb347"
-MEMORY_WRAPUP_SKILL_NAME = "memory-wrapup"
+MEMORY_SKILL = "illescasDaniel/memory-1-skill"
+MEMORY_SKILL_REF = "72c26c82956ed3976596d7b5c027f77be84dec8f"  # origin/main when pinned; later commits are not picked up
+MEMORY_SKILL_NAME = "memory-1"
+DOCS_SKILL = "illescasDaniel/docs-1-skill"
+DOCS_SKILL_REF = "0fdbd5fbc39a7f5e6f8efb76a688ba3b734fcde9"
+DOCS_SKILL_NAME = "docs-1"
+LEGACY_WRAPUP_SKILL_NAME = "memory-wrapup"  # installed by loadout 0.6.x from the agemem repo; removed on upgrade
 CODENAV_SPEC = "codenav-mcp>=0.2.1,<0.3"
 WEBNAV_SPEC = "webnav-ts-mcp@0.2"
 CODENAV_GO_SPEC = "github.com/illescasDaniel/codenav-go-mcp/cmd/codenav-go-mcp@latest"

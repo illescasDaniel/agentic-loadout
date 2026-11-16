@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -45,26 +46,26 @@ def prompter(*answers, **kw):
 
 
 class FakeExecutor:
-    """Stands in for uvx / npx: records the command and writes the files the real tool would (Phase 0, docs/original-implementation-plan.md §8a)."""
+    """Stands in for npx: records the command and writes the files the real skills CLI would (Phase 0, docs/original-implementation-plan.md §8a)."""
 
     def __init__(self):
         self.calls = []
 
     def __call__(self, cmd, cwd, env):
         self.calls.append((list(cmd), env))
-        if pins.AGEMEM in cmd:
-            (cwd / "memory").mkdir(exist_ok=True)
-            (cwd / "memory" / "activeContext.md").write_text("x")
-            (cwd / ".agemem").mkdir(exist_ok=True)
-            path = cwd / ".mcp.json"
-            data = json.loads(path.read_text()) if path.exists() else {}
-            data.setdefault("mcpServers", {})["agemem"] = {"command": "uvx"}
-            path.write_bytes((json.dumps(data, indent=2) + "\n").encode())
+        if "remove" in cmd:
+            for folder in (".claude/skills", ".agents/skills"):
+                shutil.rmtree(cwd / folder / cmd[cmd.index("remove") + 1], ignore_errors=True)
         elif "add" in cmd:
-            skill = cwd / ".claude/skills/sdd-feature"
-            (skill / "agents").mkdir(parents=True, exist_ok=True)
-            (skill / "SKILL.md").write_text("x")
-            (skill / "agents/code-grader.md").write_bytes("---\nname: code-grader\ndescription: d\n---\n\n# Grader body\n".encode())
+            name = cmd[cmd.index("-s") + 1] if "-s" in cmd else pins.SDD_SKILL_NAME
+            for folder in (".claude/skills", ".agents/skills"):
+                skill = cwd / folder / name
+                skill.mkdir(parents=True, exist_ok=True)
+                (skill / "SKILL.md").write_text("x")
+            if name == pins.SDD_SKILL_NAME:
+                (cwd / ".claude/skills" / name / "agents").mkdir(exist_ok=True)
+                (cwd / ".claude/skills" / name / "agents/code-grader.md").write_bytes(
+                    "---\nname: code-grader\ndescription: d\n---\n\n# Grader body\n".encode())
             (cwd / "skills-lock.json").write_text("{}")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 

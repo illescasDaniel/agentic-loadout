@@ -15,7 +15,6 @@ from .vendors import VENDORS, _split, agent_filename, convert_agent, workflow_pa
 
 ASSETS = Path(__file__).parent / "assets"
 SKILL_DIRS = (".claude/skills", ".agents/skills", ".cursor/skills", ".codex/skills")
-MEMORY_WRITE_TOOLS = ("capture", "remember", "index", "maintain")
 
 
 def write_agent(ctx: Ctx, tools: list[str], name: str, claude_format: bytes) -> None:
@@ -34,10 +33,9 @@ def write_agent(ctx: Ctx, tools: list[str], name: str, claude_format: bytes) -> 
 
 
 def without_memory(source: str) -> str:
-    """Drop every agemem tool name from an agent file (used with --without agemem)."""
-    source = re.sub(r",\s*mcp__agemem__\w+", "", source)
-    return (source.replace("If the `project_memory_recall` tool is available", "If a memory-recall tool is available")
-            .replace("`memory/` or agemem", "`memory/`"))
+    """Drop the sentences that point a subagent at `memory/` (used with --without memory)."""
+    source = re.sub(r"(?m)^- If the project has `memory/MEMORY\.md`.*\n(?:  .*\n)*", "", source)
+    return re.sub(r"If the project has `memory/notes/`.*?before editing\. ", "", source, flags=re.DOTALL)
 
 
 def installed_grader_body(project: Path) -> str | None:
