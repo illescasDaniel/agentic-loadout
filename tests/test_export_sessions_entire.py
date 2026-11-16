@@ -31,8 +31,8 @@ def agent_homes(tmp_path_factory, monkeypatch):
 
 def git(repo, *args, stdin=None):
     done = subprocess.run(["git", "-C", str(repo), "-c", "user.email=a@b", "-c", "user.name=x", *args],
-                          input=stdin, capture_output=True, text=True, check=True)
-    return done.stdout.strip()
+                          input=stdin.encode() if stdin is not None else None, capture_output=True, check=True)
+    return done.stdout.decode().strip()  # bytes in and out: text mode would send CRLF to `git mktree` on Windows
 
 
 def make_tree(repo, files):
