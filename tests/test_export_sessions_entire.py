@@ -5,6 +5,7 @@ agents' home folders are monkeypatched to empty temporary folders so no real tra
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ import pytest
 SCRIPT = Path(__file__).parent.parent / "src/agentic_loadout/assets/skills/memory-1/scripts/export_sessions.py"
 spec = importlib.util.spec_from_file_location("export_sessions", SCRIPT)
 exporter = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = exporter  # dataclasses look the module up by name while it is executed
 spec.loader.exec_module(exporter)
 
 CODEX_ID = "01a1a3a8-af33-7792-91b3-777ab09edd59"

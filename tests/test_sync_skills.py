@@ -2,6 +2,7 @@
 
 import importlib.util
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ import pytest
 SCRIPT = Path(__file__).parent.parent / "scripts/sync_skills.py"
 spec = importlib.util.spec_from_file_location("sync_skills", SCRIPT)
 sync = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = sync  # dataclasses look the module up by name while it is executed
 spec.loader.exec_module(sync)
 
 SCRIPT_V1 = "import sys\n\nHOME = 1\n\n\ndef main():\n    args = parse()\n    if not args:\n        return 1\n    return 0\n"

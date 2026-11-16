@@ -4,6 +4,7 @@ byte, the manifest covers every file, and the pins name the commits the copies w
 import hashlib
 import importlib.util
 import re
+import sys
 from pathlib import Path
 
 from agentic_loadout import pins
@@ -12,6 +13,7 @@ from agentic_loadout.agents import ASSETS
 SYNC = Path(__file__).parent.parent / "scripts/sync_skills.py"
 spec = importlib.util.spec_from_file_location("sync_skills", SYNC)
 sync_skills = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = sync_skills  # dataclasses look the module up by name while it is executed
 spec.loader.exec_module(sync_skills)
 
 SKILLS = ASSETS / "skills"
