@@ -49,7 +49,7 @@ def install_skill(ctx: Ctx, opts: Options, name: str) -> bool:
         for rel, data in files.items():
             status = write_bytes(ctx, dest / rel, data, log=False)
             counts[status] = counts.get(status, 0) + 1
-        summary = ", ".join(f"{n} {s}" for s, n in counts.items())
+        summary = f"{len(files)} files" if replaced and set(counts) == {"created"} else ", ".join(f"{n} {s}" for s, n in counts.items())
         shown = dest.relative_to(ctx.project).as_posix() + "/"
         if not replaced and set(counts) == {"unchanged"}:
             ctx.log("unchanged", shown, f"({len(files)} files)")

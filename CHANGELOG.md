@@ -1,21 +1,41 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0] - 2026-11-16
+
+### Breaking
+- **agemem is no longer installed.** The agemem MCP server, its hooks, its `uvx` install and the `memory-wrapup` skill
+  are gone, and so are the `project_memory_*` tools the rules and subagents used. Project memory is now plain Markdown in
+  `memory/`, kept by the [memory-1](https://github.com/illescasDaniel/memory-1-skill) skill, and project docs by the
+  [docs-1](https://github.com/illescasDaniel/docs-1-skill) skill. Memory no longer needs a server, a hook or `uv`.
+  Re-running on a project set up with agemem removes the MCP entries, hooks and wrap-up skill, rewrites the memory rules
+  section, and leaves `.agemem/` and `memory/activeContext.md`, `progress.md`, `decisions.md`, `archive.md` on disk, listed
+  in the final message. Converting them is manual; the README has a prompt to paste into your coding agent.
+- Entire session history is now **opt-in**: use `--with entire` (or `--entire`). It used to be on whenever the `entire`
+  CLI was installed. A project whose rules already have the Entire section keeps it on (with a note); `--without entire`
+  turns it off and removes that section. `--entire` is now an option of its own; it used to be an accepted abbreviation
+  of `--entire-upload-sessions`, which must now be written out.
+- The `.agents/scripts/entire_sessions.py` adapter is gone (removed on re-run when it is the script loadout installed).
+  Its work is done by `export_sessions.py --entire`, part of the memory-1 skill copy.
+- The Claude Code setting `autoMemoryEnabled: false` is no longer written. An existing value is left alone. The README now
+  recommends setting it, so there is one shared memory in the repository.
 
 ### Changed
-- **Breaking:** agemem is no longer installed. Project memory now comes from the [memory-1](https://github.com/illescasDaniel/memory-1-skill)
-  skill and project docs from the [docs-1](https://github.com/illescasDaniel/docs-1-skill) skill, both installed with
-  `npx skills` at pinned commits. The memory rules section is rewritten for plain-file memory; there is no MCP server,
-  hook or `uv` requirement for memory any more. Claude Code's built-in auto-memory is still turned off, unless you set it.
+- memory-1 and docs-1 are shipped inside the package as adapted copies, each pinned to the upstream commit it was made
+  from (`src/agentic_loadout/assets/skills/UPSTREAM.md`), and copied into `.claude/skills/` and `.agents/skills/`; they are
+  no longer fetched with `npx skills`. A project that had them from `npx skills` gets one copy: the npx copy is replaced and
+  its `skills-lock.json` entry removed. Node.js is needed only for the `sdd-feature` and `worktree` skills and the
+  TypeScript coder.
+- Entire needs CLI 0.10.0 or newer (0.12.2 and 0.13.2 were tested). A missing or older CLI is reported with install
+  instructions and what was skipped; the run continues.
 - The architect, coder and workflow texts no longer name agemem tools.
 - `--without agemem` is accepted as `--without memory` (new: `--without docs`); `--memory-model` is accepted and ignored,
   both with a notice.
 
 ### Added
-- With Entire and memory both installed, `.agents/scripts/entire_sessions.py` fills `memory/sessions/` from the
-  checkpoints Entire keeps in git data (read-only, standard library only).
-- Re-running on a project set up with agemem removes its MCP entries, hooks and `memory-wrapup` skill and lists what it
-  left on disk (`.agemem/`, `memory/*.md` memory-bank files); see the README and `docs/memory-1-docs-1-integration.md`.
+- `export_sessions.py --entire` in the memory-1 copy adds sessions that only Entire has (read from git data, same format
+  and redaction, never rewrites a file). It reads Entire's compact transcript format version 1 and warns on any other.
+- `scripts/sync_skills.py` rebuilds the vendored skills from upstream checkouts at given commits and checks that removing
+  the marked loadout blocks gives the upstream files back byte for byte.
 
 ## [0.6.1] - 2026-11-13
 
