@@ -1,0 +1,193 @@
+# memory-1 and docs-1 instead of agemem
+
+Status: exploration on the local branch `memory-1-docs-1`. Nothing is pushed, released or version-bumped.
+
+## Decision
+
+- **agemem is removed from the default install, not made opt-in.** Loadout now installs two Agent Skills,
+  [memory-1](https://github.com/illescasDaniel/memory-1-skill) (project memory as plain Markdown in `memory/`) and
+  [docs-1](https://github.com/illescasDaniel/docs-1-skill) (indexed `docs/`), at pinned commits, fetched with
+  `npx skills` like the SDD and worktree skills. There is no MCP server, no hook and no `uv` requirement for memory.
+  Opt-in was rejected because keeping the agemem code path means keeping its provider prompts, pins, MCP/hook writers
+  and tests for a system the benchmark below says is worse for the question that matters most.
+- **Entire and memory-1 are joined by a hybrid (option b below).** memory-1's own `export_sessions.py` still fills
+  `memory/sessions/` from the agent's own transcript files; a new stdlib-only adapter,
+  `.agents/scripts/entire_sessions.py`, adds the sessions that only Entire has (read from git data) in the same format,
+  so the agent can `grep` one folder.
+- **A project already set up with agemem is cleaned automatically on the next run** (MCP entries, hooks, wrap-up skill),
+  and what agemem stored is left on disk and listed. See "Upgrade behaviour".
+
+Benchmark that motivated this (from the memory-1 work): on past-decision questions memory-1 scored 1.59/2 against
+0.87 for agemem; raw transcripts alone scored 1.58. Plain files plus transcripts beat the retrieval system.
+
+## 1. Where agemem was wired into the loadout
+
+All references are to `main` before this branch (`git show main:<file>`).
+
+| Area | Where (file:line on `main`) |
+|---|---|
+| Version pin and Python for `uvx` | `src/agentic_loadout/pins.py:3-4` (`agemem@0.4.0`, 3.12) |
+| Wrap-up skill pin (monorepo, one skill) | `pins.py:12`, `pins.py:14` |
+| Install command (`uvx ... project init --mcp <clients>`) | `runners.py:18-19`, run at `install.py:102-103` |
+| Files agemem writes (MCP JSON/TOML, hooks, `memory/`, `.agemem/`) | `install.py:21-23`, `install.py:104-105` |
+| Component name and `--without agemem` | `options.py:8`, `install.py:47`, `install.py:102`, `install.py:111` |
+| Provider choice (`jev`/`qsiv`), API-key note, preserve existing provider | `cli.py:38`, `install.py:89-91`, `install.py:106-110`, `preflight.py:22-30` |
+| `uv`/`uvx` requirement | `preflight.py:14-17` |
+| `--no-hooks` help text | `cli.py:39` |
+| Detect "memory present" for `coders` and re-runs | `install.py:154-156` |
+| Memory flag threaded to subagent and coder generation | `install.py:126-129`, `coders.py:168` (adds `mcp__agemem__project_memory_recall`) |
+| Stripping agemem tool names when memory is off | `agents.py:37-40` |
+| Subagent prompts: `disallowedTools: ... mcp__agemem__*`, recall instructions | `assets/agents/architect.md:6,19`, `coder.md:5,12,30`, `code-grader.head.md:6`, `tiers/code-reviewer.md:5` |
+| Workflow text (memory bank files, `project_memory_recall`/`_index`/`_pending`, `memory-wrapup`) | `assets/development-workflow.md:14-15,19,35,43,71,105,109-112` |
+| Rules text (6 `project_memory_*` mentions) | `assets/templates/memory-rules.md` (56 lines) |
+| Entire rules (capture checkpoint via `project_memory_remember`) | `assets/templates/entire-rules.md:8-9` |
+| Tests | `tests/test_install.py` (19 mentions), `test_small_agents.py` (5), `conftest.py` (3), `test_entire.py`, `test_detect_and_brew.py` |
+| Docs and metadata | `README.md` (15), `CHANGELOG.md` (13), `pyproject.toml` (2), `docs/entire-investigation.md` (7), `docs/original-implementation-plan.md` (46, historical, left as written) |
+
+Everything above except the last row's historical plan was changed or removed on this branch.
+
+## 2. What Entire stores and how to read it
+
+Sources: Entire's docs, [checkpoint storage](https://docs.entire.io/guides/checkpoints/checkpoint-storage),
+[checkpoints CLI reference](https://docs.entire.io/cli/checkpoints.md),
+[inspect sessions in the CLI](https://docs.entire.com/guides/sessions/inspect-sessions-in-cli), the
+[CLI repository](https://github.com/entireio/cli), and a read-only look at checkpoints of a local repository with Entire
+CLI 0.13.2. The docs say that checkpoints are git data created when you commit; they do **not** document the tree
+layout or the transcript format, so the layout below comes from inspecting real data and could change.
+
+- **Where:** git data, not working-tree files. Since 0.10.0 one ref per checkpoint,
+  `refs/entire/checkpoints/<xx>/<ULID>` (the `git-refs` backend); older setups use the branch `entire/checkpoints/v1`.
+  Only after a commit (sessions with no commit yet have no checkpoint; `entire checkpoint list --pending` shows them).
+- **Per checkpoint:** top-level `metadata.json`, and per session `0/metadata.json` (has `session_id`, `agent`),
+  `0/full.jsonl` (raw, agent-native, large) and `0/transcript.jsonl` (compact, normalized, `"v": 1`, cumulative for the
+  session, includes tool-use lines).
+- **Redaction:** best effort only (the docs say so); the adapter redacts again with the same patterns as memory-1's
+  exporter.
+- **Reading:** `entire checkpoint list`, `entire checkpoint explain <id> [--full|--transcript|--json]`,
+  `entire session info <id> --transcript`. `entire search` needs a login. Without the CLI, plain git works:
+  `git for-each-ref refs/entire/checkpoints`, `git ls-tree -r`, `git cat-file`.
+- **Size:** in one real session I read, the raw transcript was 8,038,411 bytes, the compact one 509,405 and the
+  prose-only digest the adapter writes about 59 KB. Most of a transcript is tool output.
+
+## 3. The three options and the choice
+
+memory-1 expects `memory/sessions/` (git-ignored) to hold one Markdown digest per session so notes can cite a `source`
+and the agent can grep.
+
+- **(a) Keep memory-1's own export only** and use Entire just for `entire checkpoint ...` lookups. Least code, but
+  memory-1 only sees sessions whose native transcript files still exist on this machine, and only for the clients its
+  exporter reads. Sessions from another machine, from Cursor, or already rotated away by the client are invisible to
+  `grep`.
+- **(b) An adapter that writes the same digests from Entire checkpoints** (chosen, as a supplement to (a), not a
+  replacement). Duplicate work is minimal: the adapter skips any session whose file already exists (matched by the
+  session-id part of the name) and never rewrites it unless `--update`. The result is one folder, plain files, no special
+  tool for the agent. Cost: ~250 lines of stdlib Python plus tests that depend on an undocumented layout.
+- **(c) No `sessions/` at all; point notes' `source` at checkpoint IDs.** No duplication, but it contradicts memory-1's
+  `SKILL.md` rule that `source` points into `sessions/`, and a plain `grep` cannot see git refs, so recall would need
+  `entire` or long `git grep` commands on every lookup.
+
+The adapter is only installed when Entire is enabled and memory is selected, outside the skill folders (so
+`skills add` does not overwrite it): `.agents/scripts/entire_sessions.py`. It reads `refs/entire/checkpoints/*`, the
+`entire/checkpoints/v1` branch and remote-tracking copies, groups checkpoints by session and takes the most complete
+transcript, keeps user and assistant text only (no tool calls or output), skips injected context, and redacts
+credential-shaped strings. It names files the way `export_sessions.py` does (`<first date>-<session id part>.md`) and
+creates `memory/sessions/.gitignore` only when the folder is new. A transcript with a `v` other than 1 is skipped with
+a warning rather than guessed at.
+
+## 4. What changed
+
+- `pins.py`, `runners.py`: pinned memory-1 and docs-1 commits, `skills add ... -s <name> --copy` (project scope, never
+  `-g`), `skills remove` for the old wrap-up skill.
+- `options.py`, `cli.py`: components are `sdd|memory|docs|agents|coders|worktree|entire`; `--without agemem` maps to
+  `memory` with a notice, `--memory-model` is accepted and ignored with a notice.
+- `install.py`: no `uvx`/MCP/hooks for memory; installs both skills; Claude's `autoMemoryEnabled: false` is written to
+  `.claude/settings.json` (or `.local` with `--personal-settings`) only if neither file already sets it; installs the
+  adapter when Entire and memory are both on; runs the cleanup below first.
+- `preflight.py`: `uv` is needed only for the Python coder.
+- `legacy.py` (new): the agemem cleanup.
+- Rules templates: `memory-rules.md` rewritten from memory-1's README paragraph (read `NOW.md`/`MEMORY.md` at start,
+  notes win for why and code wins for what, only the main agent writes memory, export sessions and run the check at the
+  end); new `docs-rules.md` from docs-1's README paragraph; `entire-rules.md` and `entire-sessions.md` describe the
+  checkpoint storage and the adapter; `memory-legacy.md` is the migrate-then-delete item shown while agemem files remain.
+- Agent prompts and `development-workflow.md`: agemem tool names and the `memory-wrapup` step are gone; subagents still
+  read memory and never write it (a test checks no asset except the legacy item mentions agemem).
+- `README.md`, `CHANGELOG.md` (Unreleased), `pyproject.toml` description and keywords, `docs/entire-investigation.md`
+  pointer. The version is unchanged.
+- `tests/baseline-agent-hashes.json`: digests changed only for the workflow, architect, coder and coder-python outputs
+  (all three clients), because their memory-lookup lines named agemem tools; utility is unchanged.
+
+## 5. What is lost compared with agemem
+
+- **Source-code index and semantic recall** (`project_memory_index`, recall over source and notes). The code-navigation
+  MCPs the loadout already installs for language coders (codenav for Python, codenav-go, webnav for TypeScript,
+  codenav-swift) cover symbol navigation, rename and refactoring through the compiler or type checker, so "where is X
+  defined/used" is covered for those languages. They do not provide semantic retrieval over docs, notes or sessions; that
+  is now `grep` plus the docs-1 index and memory-1 `MEMORY.md`.
+- **Cross-project memory.** memory-1 is per repository. Installing the skills globally is possible but there is no shared
+  store, so a decision made in one project is not visible in another.
+- **Automatic recall injection.** agemem's SessionStart and UserPromptSubmit hooks put relevant notes in front of the
+  agent. Now the only mechanism is the rule "read `memory/NOW.md` and `MEMORY.md` at session start".
+- **Screening and queueing.** Provider-screened notes, `CONFLICT:` detection and the pending queue worked by
+  `memory-wrapup` are gone; conflicts are handled by memory-1's `superseded` notes and its `memory_check.py`.
+- **The summaries tier** (one-line abstract per memory file in every recall) has no equivalent; `MEMORY.md` is the index.
+
+## 6. Upgrade behaviour (a project set up with loadout 0.6.x)
+
+On re-run with the clients that are selected (and so inside the project only):
+
+- Removed: the `agemem` server in `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, only if its entry launches
+  agemem (an unrelated server that happens to be called `agemem` is kept with a warning); agemem's hook handlers
+  (recognised by their ` # agemem:<Event>` suffix) in `.claude/settings.json`, `.claude/settings.local.json` and
+  `.codex/hooks.json`, leaving Entire's and the user's hooks; the `memory-wrapup` skill via `skills remove`; the old
+  memory rules section, replaced in place (same marker name).
+- A selected-out client whose config still registers agemem is reported, not edited.
+- Left on disk, listed in the final message: `.agemem/`, and agemem's memory-bank files
+  `memory/activeContext.md`, `progress.md`, `decisions.md`, `archive.md`. The rules carry an item telling the agent to
+  turn them into memory-1 notes and then delete them; once they are gone the item disappears on the next run.
+- Outside the project and untouched: `~/.config/agemem` and its model cache. `autoMemoryEnabled: false` stays (it is
+  what memory-1 wants as well).
+- `--dry-run` shows every edit and the `skills remove` command and changes nothing. A second run changes nothing.
+  If `skills remove` fails, the run continues with a warning naming the folders to delete by hand.
+
+## 7. Tested and not tested
+
+Tested:
+
+- Full suite: `uv run --offline pytest -q` gave 98 passed. New tests cover the adapter (10), the pinned skill commands,
+  rules per client, `autoMemoryEnabled` rules, the whole upgrade path (JSON and TOML entries next to other tools'
+  entries, hooks next to an Entire hook, wrap-up skill removal, leftovers message, rerun idempotence, dry run,
+  unselected client, an unrelated `agemem` server, `skills remove` failure), the CLI aliases, adapter install only with
+  Entire and memory, and that no asset text mentions agemem tools.
+- End to end in throwaway git repos under `/tmp`, with a temporary `HOME`: a fresh install for Claude, Cursor and Codex
+  using the real `npx skills` against both pinned commits (both skills and their scripts land in `.claude/skills` and
+  `.agents/skills`); a rerun that changed nothing; a hand-built agemem project upgraded for real, including a real
+  `skills remove`; a dry run; and an install with a stub `entire` on `PATH` (I did not run a real `entire enable`
+  because it writes hooks), which installed the adapter and the Entire rules.
+- The adapter was run read-only against real Entire checkpoints of a local repository; output went outside the repo.
+
+Not tested:
+
+- A real `entire enable` followed by real Claude Code, Cursor or Codex sessions feeding the adapter end to end. Only the
+  Codex and Claude agent values and the compact `v: 1` format were seen in real data; Cursor's format is unverified.
+- Newer Entire versions: the layout is undocumented, so a layout change would make the adapter find nothing (it reports
+  "no Entire checkpoints") or skip with an unsupported-format warning rather than write wrong data.
+- Whether Claude Code keeps its own transcripts long enough for option (a) alone to be insufficient (assumed, not
+  measured).
+- The agemem project was hand-built to the shape loadout 0.6.x writes; I did not run the real agemem installer because
+  it writes to the user's config directory.
+- The pinned memory-1 commit does not include the owner's uncommitted edits to `SKILL.md` and `memory_check.py` in the
+  local skill checkout; the pins must be moved once those are pushed.
+
+## 8. Open questions for the owner
+
+1. Is removing agemem a breaking change for the next release (minor or major), and should the CHANGELOG say so more
+   loudly than it does now?
+2. Should Entire support live in memory-1's `export_sessions.py` upstream instead of this adapter? That removes the
+   second script and the duplicated redaction patterns, at the cost of memory-1 learning an undocumented layout.
+3. Hybrid or Entire-only? If you would rather have a single source, Entire-only drops the native-transcript path and
+   loses everything when Entire is not installed.
+4. Should the legacy migration be automated (convert the memory-bank files into memory-1 notes) or stay a manual step
+   for the agent?
+5. Which memory-1 and docs-1 commits should be pinned, and how should pin updates be released?
+6. Minimum Entire version to claim (0.10.0 for the refs backend; the branch backend is also read)?
+7. Keep `autoMemoryEnabled: false` for Claude Code? It avoids two memories, but it removes a feature users may want.
