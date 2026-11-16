@@ -264,7 +264,7 @@ def planned_files(built: dict[str, Built], skills_dir: Path, pins_file: Path) ->
 
 
 def existing_files(built: dict[str, Built], skills_dir: Path) -> set[Path]:
-    return {p for name in built for p in (skills_dir / name).rglob("*") if p.is_file()}
+    return {p for name in built for p in (skills_dir / name).rglob("*") if p.is_file() and "__pycache__" not in p.parts}
 
 
 def sync(specs: dict[str, tuple[Path, str]], skills_dir: Path = SKILLS_DIR, pins_file: Path = PINS_FILE,

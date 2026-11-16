@@ -1,5 +1,6 @@
-"""The Entire-to-memory/sessions adapter, against synthetic repositories that hold checkpoints the way Entire stores them
-(one ref per checkpoint, or the entire/checkpoints/v1 branch). No Entire CLI is needed."""
+"""The `--entire` pass of the adapted memory-1 export_sessions.py, against synthetic repositories that hold checkpoints the
+way Entire stores them (one ref per checkpoint, or the entire/checkpoints/v1 branch). No Entire CLI is needed. The
+agents' home folders are monkeypatched to empty temporary folders so no real transcript is ever read."""
 
 import importlib.util
 import json
@@ -8,13 +9,22 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).parent.parent / "src/agentic_loadout/assets/scripts/entire_sessions.py"
-spec = importlib.util.spec_from_file_location("entire_sessions", SCRIPT)
-adapter = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(adapter)
+SCRIPT = Path(__file__).parent.parent / "src/agentic_loadout/assets/skills/memory-1/scripts/export_sessions.py"
+spec = importlib.util.spec_from_file_location("export_sessions", SCRIPT)
+exporter = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(exporter)
 
 CODEX_ID = "01a1a3a8-af33-7792-91b3-777ab09edd59"
 CLAUDE_ID = "5f0c2a1e-1111-4222-8333-444455556666"
+
+
+@pytest.fixture(autouse=True)
+def agent_homes(tmp_path_factory, monkeypatch):
+    home = tmp_path_factory.mktemp("agent-home")
+    monkeypatch.setattr(exporter, "HOME", home)
+    monkeypatch.setattr(exporter, "CLAUDE_ROOT", home / ".claude/projects")
+    monkeypatch.setattr(exporter, "CODEX_ROOT", home / ".codex/sessions")
+    return home
 
 
 def git(repo, *args, stdin=None):
@@ -36,7 +46,7 @@ def make_tree(repo, files):
                                   capture_output=True, check=True).stdout.decode().strip()
             lines.append(f"100644 blob {blob}\t{name}")
         else:
-            lines.append(f"040000 tree {make_tree(repo, {k: v for k, v in sub.items()})}\t{name}")
+            lines.append(f"040000 tree {make_tree(repo, dict(sub.items()))}\t{name}")
     return git(repo, "mktree", stdin="\n".join(lines) + "\n")
 
 
@@ -78,8 +88,16 @@ def repo(tmp_path):
     return tmp_path
 
 
-def run(repo, *args):
-    return adapter.main(["--project", str(repo), "--out", str(repo / "memory/sessions"), *args])
+def run(repo, *args, entire=True):
+    return exporter.main(["--project", str(repo), "--out", str(repo / "memory/sessions"), *(["--entire"] if entire else []), *args])
+
+
+def write_native_claude_session(repo, session_id, message="Hello from the agent's own transcript"):
+    folder = exporter.CLAUDE_ROOT / "".join(c if c.isalnum() else "-" for c in str(repo.resolve()))
+    folder.mkdir(parents=True)
+    events = [{"type": "user", "timestamp": "2026-11-02T09:00:00Z", "cwd": str(repo), "message": {"content": message}},
+              {"type": "assistant", "timestamp": "2026-11-02T09:01:00Z", "message": {"content": [{"type": "text", "text": "Hi."}]}}]
+    (folder / f"{session_id}.jsonl").write_text("\n".join(json.dumps(e) for e in events) + "\n")
 
 
 def test_refs_backend_writes_prose_only_redacted_and_names_codex_by_last_eight(repo, capsys):
@@ -116,17 +134,18 @@ def test_branch_backend_is_read_from_the_local_branch(repo):
     assert "from Entire checkpoint abcdef0123456789" in body
 
 
-def test_existing_session_file_is_kept_unless_update_is_given(repo):
+def test_an_existing_session_file_is_never_rewritten(repo):
     commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", session_files(CODEX_ID, "codex", TURNS))
     out = repo / "memory/sessions"
     out.mkdir(parents=True)
-    # export_sessions.py already wrote this session, possibly under a slightly different date.
+    # The agent's own export wrote this session earlier, possibly under a slightly different date.
     (out / "2026-11-02-b09edd59.md").write_text("from the agent's own transcript")
-    assert run(repo) == 0
+    assert run(repo) == 0 and run(repo) == 0
     assert [p.name for p in out.glob("*.md")] == ["2026-11-02-b09edd59.md"]
     assert (out / "2026-11-02-b09edd59.md").read_text() == "from the agent's own transcript"
-    assert run(repo, "--update") == 0
-    assert "Batching dropped" in (out / "2026-11-02-b09edd59.md").read_text()
+    commit_ref(repo, "refs/entire/checkpoints/MB/01BBBB", session_files(CODEX_ID, "codex", TURNS + [("user", text("Later question"))]))
+    assert run(repo) == 0
+    assert (out / "2026-11-02-b09edd59.md").read_text() == "from the agent's own transcript"
 
 
 def test_fresh_archive_is_git_ignored_but_a_shared_archive_is_left_alone(repo):
@@ -136,7 +155,7 @@ def test_fresh_archive_is_git_ignored_but_a_shared_archive_is_left_alone(repo):
     shared = repo / "other/sessions"
     shared.mkdir(parents=True)
     (shared / "2026-10-01-aaaaaaaa.md").write_text("an earlier shared session")
-    assert adapter.main(["--project", str(repo), "--out", str(shared)]) == 0
+    assert exporter.main(["--project", str(repo), "--out", str(shared), "--entire"]) == 0
     assert not (shared / ".gitignore").exists()
 
 
@@ -148,9 +167,17 @@ def test_unknown_transcript_format_is_skipped_with_a_warning(repo, capsys):
     assert "unsupported transcript format" in err and "1 skipped" in err
 
 
+def test_an_unknown_layout_is_skipped_with_a_warning_not_reported_as_empty(repo, capsys):
+    commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", {"sessions/one.json": b"{}", "metadata.json": b"{}"})
+    assert run(repo) == 0
+    assert not (repo / "memory").exists()
+    err = capsys.readouterr().err
+    assert "expected layout" in err and "nothing was exported" in err
+
+
 def test_no_checkpoints_and_not_a_repository_are_reported(repo, tmp_path_factory, capsys):
     assert run(repo) == 1 and "no Entire checkpoints" in capsys.readouterr().err
-    assert adapter.main(["--project", str(tmp_path_factory.mktemp("plain")), "--out", "x"]) == 1
+    assert exporter.main(["--project", str(tmp_path_factory.mktemp("plain")), "--out", "x", "--entire"]) == 1
     assert "not a git repository" in capsys.readouterr().err
 
 
@@ -162,8 +189,32 @@ def test_dry_run_and_since_write_nothing_or_filter(repo):
     assert not (repo / "memory").exists()
 
 
-def test_the_script_only_reads_git_data(repo):
+def test_the_pass_only_reads_git_data(repo):
     commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", session_files(CODEX_ID, "codex", TURNS))
     before = git(repo, "for-each-ref")
     assert run(repo) == 0
-    assert git(repo, "for-each-ref") == before
+    assert git(repo, "for-each-ref") == before and git(repo, "status", "--porcelain", "--ignored").count("\n") <= 1
+
+
+def test_without_the_flag_entire_checkpoints_are_ignored_and_the_native_behaviour_is_unchanged(repo, capsys):
+    commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", session_files(CODEX_ID, "codex", TURNS))
+    assert run(repo, entire=False) == 1
+    assert "no Claude Code or Codex sessions found" in capsys.readouterr().err and not (repo / "memory").exists()
+
+
+def test_native_sessions_are_exported_first_and_entire_adds_only_what_is_missing(repo, capsys):
+    write_native_claude_session(repo, CLAUDE_ID)
+    commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", session_files(CODEX_ID, "codex", TURNS))
+    commit_ref(repo, "refs/entire/checkpoints/MB/01BBBB", session_files("2026-11-02-" + CLAUDE_ID, "claude-code", TURNS))
+    assert run(repo) == 0
+    out = repo / "memory/sessions"
+    assert sorted(p.name for p in out.glob("*.md")) == ["2026-11-02-5f0c2a1e.md", "2026-11-03-b09edd59.md"]
+    assert "Hello from the agent's own transcript" in (out / "2026-11-02-5f0c2a1e.md").read_text()
+    err = capsys.readouterr().err
+    assert "1 new, 0 updated, 0 unchanged" in err and "entire: 1 new, 1 present" in err
+
+
+def test_entire_is_a_documented_flag(capsys):
+    with pytest.raises(SystemExit):
+        exporter.main(["--help"])
+    assert "--entire" in capsys.readouterr().out
