@@ -164,7 +164,7 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
         out(str(exc))
         out("Nothing is rolled back; fix the problem and re-run (every step is idempotent).")
         return 1
-    ctx.note("Restart or reload your client(s) and approve the new MCP servers and hooks when asked.")
+    ctx.note("Restart or reload your client(s) so they pick up the new skills, subagents and rules; approve any new MCP servers or hooks when asked.")
     report = git_state.finish(opts.project, before, opts.hide, opts.dry_run)
     summary(ctx, opts, report, out)
     return 0
