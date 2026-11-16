@@ -1,0 +1,56 @@
+# What agentic-loadout adds to the upstream skills. scripts/sync_skills.py inserts each block directly in front of the
+# `before` line (an exact upstream line that must occur exactly once), between `agentic-loadout:begin NAME` and
+# `agentic-loadout:end NAME` marker lines. `blank_after` blank lines follow the end marker; stripping the blocks removes
+# them again. `body` is a file in this folder. Never change an upstream line: only add blocks.
+
+[[insert]]
+skill = "memory-1"
+file = "scripts/export_sessions.py"
+name = "entire-import"
+before = "HOME = Path.home()"
+body = "memory-1/export_sessions.entire-import.py"
+blank_after = 1
+description = "imports `subprocess` for the Entire pass"
+
+[[insert]]
+skill = "memory-1"
+file = "scripts/export_sessions.py"
+name = "entire-code"
+before = "def main(argv=None):"
+body = "memory-1/export_sessions.entire-code.py"
+blank_after = 2
+description = "the opt-in Entire pass (functions that read checkpoints from git data, same output format and redaction)"
+
+[[insert]]
+skill = "memory-1"
+file = "scripts/export_sessions.py"
+name = "entire-flag"
+before = "    args = ap.parse_args(argv)"
+body = "memory-1/export_sessions.entire-flag.py"
+description = "the `--entire` flag"
+
+[[insert]]
+skill = "memory-1"
+file = "scripts/export_sessions.py"
+name = "entire-only"
+before = "    if not sessions:"
+body = "memory-1/export_sessions.entire-only.py"
+description = "with `--entire` and no native sessions, run only the Entire pass instead of failing"
+
+[[insert]]
+skill = "memory-1"
+file = "scripts/export_sessions.py"
+name = "entire-run"
+before = "    return 0"
+body = "memory-1/export_sessions.entire-run.py"
+description = "with `--entire`, run the Entire pass after the native export"
+
+[[insert]]
+skill = "memory-1"
+file = "SKILL.md"
+name = "entire-note"
+before = "After exporting, add one line per new session to `memory/sessions/INDEX.md` (and refresh the line of an updated one):"
+body = "memory-1/SKILL.entire-note.md"
+style = "md"
+blank_after = 1
+description = "one paragraph about the opt-in `--entire` flag, in the Session archive section"

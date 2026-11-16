@@ -226,6 +226,14 @@ It reads Claude Code (`~/.claude/projects/`) and Codex (`~/.codex/sessions/`) tr
 user and assistant prose, redacts credential-like strings, and writes one file per session. It prints only the files
 that are new or changed (a session that grew since the last export is rewritten), so it is safe to run every time.
 
+<!-- agentic-loadout:begin entire-note -->
+Add `--entire` to also read [Entire](https://github.com/entireio/cli) checkpoints, but only when the user asks for it
+(the project's rules say when it is enabled). Checkpoints are git data (`refs/entire/checkpoints/`), not files, so
+this pass adds the sessions the agent's own transcript files no longer hold: ones rotated away, recorded on another
+machine, or from other clients. It reads git only, never rewrites a session file that already exists, and redacts the
+same way. Entire needs a commit before a session has a checkpoint.
+<!-- agentic-loadout:end entire-note -->
+
 After exporting, add one line per new session to `memory/sessions/INDEX.md` (and refresh the line of an updated one):
 `- 2026-10-05 [2026-10-05-1a2b3c4d.md](2026-10-05-1a2b3c4d.md): secret scanner batching vs per-line requests; moved v0.3.0 tag`.
 
