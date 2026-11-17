@@ -4,8 +4,8 @@ agentic-loadout ships adapted copies of two Agent Skills. Each copy is made from
 
 | Skill | Upstream repository | Commit |
 |---|---|---|
-| `memory-1` | https://github.com/illescasDaniel/memory-1-skill | `4fbbd81c7d96c45f849d2d09905061a5b4e579a0` |
-| `docs-1` | https://github.com/illescasDaniel/docs-1-skill | `0fdbd5fbc39a7f5e6f8efb76a688ba3b734fcde9` |
+| `memory-1` | https://github.com/illescasDaniel/memory-1-skill | `cc8af695783d69982433bf8537f053bb7da1f4bc` |
+| `docs-1` | https://github.com/illescasDaniel/docs-1-skill | `c1f75fc38a04ba8b8dc0c9a3cc8621c48d893c11` |
 
 ## What differs from upstream
 
@@ -32,7 +32,7 @@ Every difference is an insertion between an `agentic-loadout:begin NAME` and an 
 | `memory-1/templates/NOW.md` | `33a49515e4993add3398dd761a2757678bed98e76de0bfa830ca7179ca72145f` | no |
 | `memory-1/templates/notes/_example.md` | `dfef86ac833702c9889b4fc3ec5200ac99538abb9421a9639d2e23ea873cb54e` | no |
 | `memory-1/templates/sessions/INDEX.md` | `41bcbc17607e29348915c7eec91520310416437de7ed1016564e8b9586be0c4d` | no |
-| `docs-1/SKILL.md` | `4ee9cea6a5ae5113326cbe9bc5aaaf024ca6ddaf6802c66c2e3286b5dd516dc5` | no |
+| `docs-1/SKILL.md` | `a876a0b44c49cb1e3d1bd85db625ac8dbb6256d454dc0367aa0dcc76d80924f0` | no |
 | `docs-1/scripts/docs_index.py` | `50997305b0be70550d196f10d7563c657b16cd1302c96818d4faec8d1d3ecca4` | no |
 | `docs-1/templates/doc.md` | `e184b65699e4c8044d077bd6b6ff6d4b65eadf22556b7db76bd4b520bd965829` | no |
 

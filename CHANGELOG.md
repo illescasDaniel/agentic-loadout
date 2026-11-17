@@ -9,6 +9,9 @@
   confirm. The legacy-memory item no longer mentions a shortcut to ignore.
 - memory-1 gains frontmatter metadata (license, author, version, tags), a Scripts table, and a Requirements and limits
   section that states what the session export reads and keeps (memory-1 at `4fbbd81`).
+- docs-1 gains the same metadata (license, author, version, tags), a Scripts table, a Requirements and limits section
+  (git history needed for staleness checks, what `check` reads and runs, which output lines are failures) and a setup
+  step to create `docs/` first (docs-1 at `c1f75fc`).
 
 ## [0.7.3] - 2026-11-17
 

@@ -1,6 +1,11 @@
 ---
 name: docs-1
 description: Set up and maintain project documentation that AI agents can navigate fast and trust - one subject per Markdown doc with a stable ID, status, dates and the code paths it covers, a generated one-line-per-doc index, and a checker for stale docs, broken links and duplicate IDs. Use when asked to set up, organize, restructure or index project docs, write or update a doc (architecture, how-to, reference, runbook, decision record), find the docs for a file, or check that docs are up to date.
+license: MIT
+metadata:
+  author: Daniel Illescas Romero <illescas.daniel@protonmail.com>
+  version: "1.1.0"
+  tags: [documentation, docs, index, frontmatter, staleness]
 ---
 
 # docs-1
@@ -91,6 +96,7 @@ Use this when cutting a release or fixing a failed one.
 
 ## Setting up or reorganizing existing docs
 
+0. Create the `docs/` folder if the project has none; the script exits with `no docs folder at docs` without it.
 1. Inventory: list the Markdown docs (`docs/`, `README.md`, `ARCHITECTURE.md`, other top-level guides). Leave `README.md`,
    `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md` and license files where they are; they are not indexed docs.
 2. Show the user the plan before moving files: which files get frontmatter, which move into which area, which are split.
@@ -99,6 +105,29 @@ Use this when cutting a release or fixing a failed one.
    `verified` only for docs whose claims you checked; otherwise leave it empty.
 4. Run `docs_index.py write` and `docs_index.py check`, and fix what it reports.
 5. Add the docs paragraph from this skill's README to `AGENTS.md` (or `CLAUDE.md`) so every agent starts at the index.
+
+## Scripts
+
+Run it with `python3 <skill dir>/scripts/docs_index.py [--docs DIR] <command>`.
+
+| Script | Purpose | Main arguments |
+| --- | --- | --- |
+| `docs_index.py write` | Regenerate `INDEX.md` from the docs' frontmatter | none |
+| `docs_index.py check` | Print `ERROR`, `STALE?` and `WARN` lines; exit 1 if there are errors | none |
+| `docs_index.py covers` | List the docs whose `covers` match the given files | one or more paths |
+| `docs_index.py next-id` | Print the next free `DOC-n` | none |
+| `docs_index.py verify` | Stamp `verified: <today> <HEAD>` on the given docs; exit 1 if an ID is unknown | one or more IDs |
+
+`--docs DIR` defaults to `docs`; run from the repository root.
+
+## Requirements and limits
+
+- Python 3.9 or newer, standard library only. Without a shell, keep the frontmatter and `docs/INDEX.md` consistent by hand.
+- Staleness needs a git repository with history: outside git, or if `git` is missing, `check` still validates fields and
+  links but cannot flag stale docs. A shallow clone may lack the `verified` commit; it then compares by date.
+- `check` reads every Markdown file under the repository (skipping `node_modules`, `vendor`, `dist`, `build`, `target`
+  and virtualenvs). It only reads files and runs read-only `git` commands; `write` regenerates the index files and `verify` edits the frontmatter of the docs you name.
+- `ERROR` lines must be fixed (`check` exits 1). `STALE?` and `WARN` lines are prompts to re-check, not failures.
 
 ## Rules
 
