@@ -11,7 +11,7 @@ MEMORY_SKILL = "illescasDaniel/memory-1-skill"
 MEMORY_SKILL_REF = "a141c5aed3fb6f4f1b955083a915fdffd0d71833"
 MEMORY_SKILL_NAME = "memory-1"
 DOCS_SKILL = "illescasDaniel/docs-1-skill"
-DOCS_SKILL_REF = "13b2e5390db0bd46471e32e913e88d9c8b0bab86"
+DOCS_SKILL_REF = "bc5d8e9f259613a076f6c26bec1db84d17f3eac0"
 DOCS_SKILL_NAME = "docs-1"
 LEGACY_WRAPUP_SKILL_NAME = "memory-wrapup"  # installed by loadout 0.6.x from the agemem repo; removed on upgrade
 CODENAV_SPEC = "codenav-mcp>=0.2.1,<0.3"
