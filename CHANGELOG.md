@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0] - 2026-11-17
+
+### Changed
+- Replace sdd-feature with the pinned sdd-html-feature skill and its single-page approval workflow. Existing old skill copies are retained and reported for manual review.
+- Move the agemem migration instructions into a separate guide.
+
 ## [0.7.5] - 2026-11-17
 
 ### Fixed

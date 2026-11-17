@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="170" viewBox="0 0 920 170" role="img" aria-labelledby="title desc">
+<title id="title">agentic-loadout installer test results</title><desc id="desc">151 tests passed on Python 3.12 in an independent recheck of version 0.7.5. This is not a SkillEvaluator score.</desc>
+<rect x="1" y="1" width="918" height="168" rx="22" fill="#f2f7fb" stroke="#bfd2e2" stroke-width="2"/>
+<rect x="24" y="24" width="128" height="122" rx="18" fill="#153c56"/><path d="M53 85l18 18 40-46" fill="none" stroke="#91e0c3" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="180" y="51" fill="#547587" font-family="Arial,sans-serif" font-size="15" font-weight="bold" letter-spacing="1.5">AGENTIC-LOADOUT · INSTALLER TESTS</text>
+<text x="180" y="95" fill="#173d56" font-family="Arial,sans-serif" font-size="34" font-weight="bold">151 tests passed</text>
+<text x="180" y="125" fill="#416478" font-family="Arial,sans-serif" font-size="17">Python 3.12 · v0.7.5 · independent recheck</text>
+<text x="180" y="148" fill="#547587" font-family="Arial,sans-serif" font-size="14">Not an NVIDIA SkillEvaluator score</text></svg>

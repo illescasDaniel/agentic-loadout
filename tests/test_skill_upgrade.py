@@ -139,3 +139,15 @@ def test_kept_agent_files_that_still_name_agemem_tools_are_listed_for_review(rep
     edited.write_text(edited.read_text() + "\nUse mcp__agemem__project_memory_recall first.\n")
     code, out = full(repo, tools=("claude",), executor=FakeExecutor(), without=frozenset({"sdd", "worktree", "coders"}))
     assert code == 0 and "still tell agents to use agemem tools" in out and ".claude/agents/architect.md" in out
+
+
+def test_legacy_sdd_is_kept_and_reported_when_html_sdd_is_installed(repo):
+    old = repo / ".claude/skills/sdd-feature/SKILL.md"
+    old.parent.mkdir(parents=True)
+    old.write_text("custom old skill")
+    executor = FakeExecutor()
+    code, out = full(repo, tools=("claude",), executor=executor, without=frozenset({"memory", "docs", "worktree", "coders"}))
+    assert code == 0, out
+    assert old.read_text() == "custom old skill"
+    assert "Older sdd-feature copies were kept" in out
+    assert (repo / ".claude/skills/sdd-html-feature/SKILL.md").is_file()

@@ -43,7 +43,8 @@ def installed_grader_body(project: Path) -> str | None:
     for folder in SKILL_DIRS:
         path = project / folder / pins.SDD_SKILL_NAME / "agents" / "code-grader.md"
         if path.is_file():
-            return _split(path.read_text(encoding="utf-8"))[1]
+            text = path.read_text(encoding="utf-8")
+            return _split(text)[1] if text.startswith("---\n") else text
     return None
 
 

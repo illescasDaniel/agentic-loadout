@@ -67,7 +67,7 @@ class FakeExecutor:
             if name == pins.SDD_SKILL_NAME:
                 (cwd / ".claude/skills" / name / "agents").mkdir(exist_ok=True)
                 (cwd / ".claude/skills" / name / "agents/code-grader.md").write_bytes(
-                    "---\nname: code-grader\ndescription: d\n---\n\n# Grader body\n".encode())
+                    "# Grader body\n".encode())
             (cwd / "skills-lock.json").write_text("{}")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 

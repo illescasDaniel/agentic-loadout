@@ -14,7 +14,7 @@ A project's own `CLAUDE.md` / `AGENTS.md` overrides anything here (paths, qualit
 | Current state: focus, gate status, blockers, next step | `memory/NOW.md` (the `memory-1` skill); open items that are not next in `memory/LATER.md` | you only |
 | Dated facts that stay true: decisions + why, reversals, bug causes, gotchas, preferences | `memory/notes/<slug>.md`, one fact per file, indexed in `memory/MEMORY.md` | you only |
 | How the system works now: architecture, how-tos, reference, runbooks | `docs/` (the `docs-1` skill), indexed in `docs/INDEX.md` | you, or a `coder` when the change is theirs |
-| What a feature does | `specs/<feature>/SPEC.md`, `wireframes/`, `design/<feature>/DESIGN.md` — `sdd-feature` skill | you, after user approval |
+| What a feature does | `sdd/<feature>.html` — `sdd-html-feature` skill | you, after user approval |
 
 Never put current state in notes, or rules in either memory. A significant decision gets a one-fact note (a reversal
 gets a new note that supersedes the old one). Use whichever of these the project has; if the skills are missing, skip
@@ -30,7 +30,7 @@ a gate, remind the user what needs their approval before starting anything else.
 | `architect` | Opus | Hard thinking: design decisions, interfaces, plans, root causes. Read-only. |
 | `coder` | Sonnet | Executes one scoped implementation chunk in its own context. |
 | `coder-go`, `coder-python`, `coder-swift`, `coder-typescript` | Sonnet | Optional. Same as `coder`, for that language, with its code-navigation MCP; use them instead of `coder` when the project has them. |
-| `code-grader` | Opus | Independent read-only grade of finished work against its spec (SDD Phase 5). |
+| `code-grader` | Opus | Independent read-only grade of finished work against its approved HTML page. |
 | `utility` | Haiku | Mechanical: quality-gate runs, git, moves/renames, bulk edits. |
 
 Subagents start with **no conversation history**, don't read memory unless the brief points them at it, and never write memory.
@@ -40,7 +40,7 @@ They report memory candidates and friction back to you; you decide what to recor
 
 | Request | Workflow |
 |---|---|
-| New feature or user-facing change | **SDD** (below) if the project's `CLAUDE.md` / `AGENTS.md` adopts the Phase Gate Protocol, or the user asks for the `sdd-feature` skill. Never skip or batch a gate. Otherwise, follow the structural-change row below. |
+| New feature or user-facing change | **SDD** (below) if the project's `CLAUDE.md` / `AGENTS.md` adopts the Phase Gate Protocol, or the user asks for the `sdd-html-feature` skill. Never skip or batch a gate. Otherwise, follow the structural-change row below. |
 | Bug fix | Look the area up in `memory/MEMORY.md` and `memory/notes/` first. Fix it yourself or via `coder`, with a regression test. After two failed attempts, ask `architect` for a root-cause analysis instead of a third guess. Record symptom → cause → fix as a note. |
 | Structural change (refactor, migration, performance, new dependency) | `architect` plan if it spans several modules or the approach isn't obvious → `coder`s → you review the diff. Record the decision as a note. In an SDD project, a change in behaviour goes through SDD. |
 | Small, local change or a question | Do it yourself. |
@@ -48,21 +48,17 @@ They report memory candidates and friction back to you; you decide what to recor
 
 ## SDD phases → agents
 
-Applies whenever SDD is in use (see Routing). Gates are between you and the user. Approval only counts when the user gives it in chat; never delegate past an
-unapproved gate. Record the gate status in `memory/NOW.md` (e.g. "dark-mode: Phase 1, awaiting spec
-approval") so a new session can resume.
+Follow `sdd-html-feature` when SDD applies. The canonical page is `sdd/<feature>.html` unless the project has another convention. It contains Design, Spec, Architecture, Build, Verify and Approvals tabs. Approval is given only by the user in chat; never delegate past an unapproved gate.
 
-| Phase | Who | Notes |
-|---|---|---|
-| 0 Design | you; `architect` may draft the `DESIGN.md` content (flows, failure branches `F<n>`, data model, contracts) for a non-trivial system track | Pick the track: UI (`wireframes/`), system (`design/<feature>/DESIGN.md`) or both for fullstack, and say which. Needs back-and-forth with the user. Run `design_preview.py --check` on the design; unchecked diagrams are reported at the gate. **One gate** for both tracks. |
-| 1 Spec | `architect` proposes the five design decisions (success criteria, failure handling, performance budget, trust boundary, compatibility & rollout) and the scenarios (one per `F<n>` failure branch of the design), for anything non-trivial; you discuss them with the user, then write `SPEC.md` and run `spec_check.py` | **Gate.** |
-| 2 Architecture | `architect` designs domain types and interfaces, plus the Phase 3–4 plan (steps, which are parallel); a `coder` or you writes the interfaces | **Gate:** show the interfaces and a plan summary. |
-| 3 Tests | `coder`: one test per scenario; confirm they fail for the right reason | |
-| 4 Implementation | `coder` per plan step, in parallel when they touch different files; `utility` runs the full quality gate | Code must match the approved wireframe and `DESIGN.md`; changing either needs re-approval. Coders don't weaken or delete tests; if a test is wrong, they report it. Spec flaw → back to Phase 1. Update `memory/NOW.md` at milestones. |
-| 5 Grade | `code-grader` with the spec path(s) and diff base (it reads the wireframe and design the spec links); FAILs → `coder` with the findings verbatim; max 2 rounds; a structural finding → `architect` | Show the scorecard verbatim. |
+| Phase | Who and what |
+|---|---|
+| Design | You, optionally with `architect`, prepare the visual design and seek design approval. |
+| Spec | Define contracts and scenarios on the page; seek separate spec approval. |
+| Architecture | Document interfaces and the build and verification plan; seek separate architecture approval, including the QA and grade opt-outs. |
+| Build | Write tests from the scenarios, then implement and run the quality gate. |
+| Verify | Run QA and an independent `code-grader` according to the skill's opt-outs and budgets; record findings and render the Verify report. |
 
-Once a phase's artifacts are on disk (wireframe, `SPEC.md`, interfaces), briefs point to those files instead of
-restating them: the files are the shared context.
+Brief agents with the page path, approved scope and relevant evidence rather than restating the spec.
 
 ## Writing briefs
 

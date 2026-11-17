@@ -157,6 +157,11 @@ def _run_install(opts: Options, prompter: Prompter, system: System | None = None
         replaced = [name for name, wanted in ((pins.MEMORY_SKILL_NAME, opts.wants("memory")), (pins.DOCS_SKILL_NAME, opts.wants("docs")))
                     if wanted and skills.install_skill(ctx, opts, name)]
         if opts.wants("sdd"):
+            old_sdd = [f"{folder}/sdd-feature" for folder in AGENT_SKILL_DIRS
+                       if (opts.project / folder / "sdd-feature").exists()]
+            if old_sdd:
+                ctx.warn("Older sdd-feature copies were kept: " + ", ".join(old_sdd) +
+                         ". Review and remove them if no longer needed to avoid conflicting SDD instructions.")
             run(skills_command(opts), opts, executor, ctx.lines.append, skills_env())
             ctx.lines.append(f"             writes {_writes(_skill_writes(pins.SDD_SKILL_NAME), opts.selected(), 'skills-lock.json')}")
         if opts.wants("worktree"):

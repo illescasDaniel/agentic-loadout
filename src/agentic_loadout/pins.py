@@ -1,9 +1,9 @@
 """Every external version in one place, so a release updates one file."""
 
 SKILLS = "skills@1.7.4"
-SDD_SKILL = "illescasDaniel/sdd-feature-skill"
-SDD_SKILL_REF = "5443fe57ff5f0fef25d8a76f75dae64953bb9e7b"
-SDD_SKILL_NAME = "sdd-feature"
+SDD_SKILL = "illescasDaniel/sdd-html-feature-skill"
+SDD_SKILL_REF = "c33218c8082cc7b95d7e58eb2624e0e1f41e950e"
+SDD_SKILL_NAME = "sdd-html-feature"
 WORKTREE_SKILL = "illescasDaniel/worktree-skill"
 WORKTREE_SKILL_REF = "37674c26b84eca9df37d8dafccc367da7455d079"
 WORKTREE_SKILL_NAME = "worktree"
