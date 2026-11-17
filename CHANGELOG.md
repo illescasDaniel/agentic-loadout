@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.5] - 2026-11-17
 
 ### Fixed
 - docs-1's `docs_index.py` no longer crashes with `FileNotFoundError` on every command when `git` is not installed;
