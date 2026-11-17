@@ -48,7 +48,7 @@ def test_every_command_works_without_git(tmp_path):
     assert "DOC-001" in (docs / "INDEX.md").read_text()
 
     assert run(tmp_path, "next-id").stdout.strip() == "DOC-002"
-    assert "docs/a.md" in run(tmp_path, "covers", "src/app.py").stdout
+    assert "a.md [current]" in run(tmp_path, "covers", "src/app.py").stdout  # docs\a.md on Windows
 
     verify = run(tmp_path, "verify", "DOC-001")
     assert verify.returncode == 0, verify.stderr
