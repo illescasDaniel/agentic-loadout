@@ -22,8 +22,8 @@ this into your coding agent, opened in the project, after the loadout has run:
 > decision, reversal, preference or incident as one-fact note under `memory/notes/`, keeping its date and the reason;
 > verify each fact against the code at HEAD and drop what is stale or can be read from the code; never copy secrets.
 > Run `python3 <skill folder>/scripts/memory_check.py --memory memory` and fix what it reports. Show me a summary of what
-> you converted and what you dropped, and only after I approve delete the old files and `.agemem/` with `trash` (not
-> `rm`), then re-run `uvx --python 3.12 agentic-loadout .` so the migration item leaves the rules.
+> you converted and what you dropped. Export and verify the saved agemem and jevmem notes too. Preserve the original
+> stores and `archive.md`; ask me separately before any later removal.
 
 </details>
 

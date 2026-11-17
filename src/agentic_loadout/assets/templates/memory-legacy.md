@@ -1,5 +1,2 @@
-- This project's `memory/` still holds files from the previous memory system (agemem): `activeContext.md`,
-  `progress.md`, `decisions.md`, `archive.md` and the `.agemem/` folder. They are not memory-1 files: do not read them
-  at session start (`NOW.md` is the status file). When the user
-  agrees, migrate them (current state to `NOW.md` and `LATER.md`, each dated decision to a note under `memory/notes/`,
-  keeping its date and why), then delete the old files and `.agemem/` and re-run agentic-loadout to drop this item.
+- Legacy memory (`memory/activeContext.md`, `progress.md`, `decisions.md`, `archive.md`, `.agemem/` and any jevmem store) remains historical evidence. Read relevant material when needed, including at session start while migration is incomplete; `NOW.md` is the current status.
+- Export and verify all saved agemem and jevmem notes before deciding what to migrate. Preserve original stores and `archive.md`; never delete them as part of migration. Convert verified current state and useful decisions into memory-1 notes with their dates and reasons. Ask the user separately before any later removal.

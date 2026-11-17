@@ -234,3 +234,15 @@ def test_cli_version_matches_package_metadata():
 
     project = Path(__file__).resolve().parents[1]
     assert __version__ == tomllib.loads((project / 'pyproject.toml').read_text())['project']['version']
+
+
+def test_grader_uses_skill_qa_path_not_broken_sibling_link(repo):
+    from agentic_loadout.agents import grader_bytes
+    from agentic_loadout.files import Ctx
+
+    path = repo / '.claude/skills/sdd-html-feature/agents/code-grader.md'
+    path.parent.mkdir(parents=True)
+    path.write_text('See [qa-tester.md](qa-tester.md), as in qa-tester.md.\n')
+    result = grader_bytes(Ctx(repo), memory=True).decode()
+    assert '[qa-tester.md](qa-tester.md)' not in result
+    assert 'sdd-html-feature' in result

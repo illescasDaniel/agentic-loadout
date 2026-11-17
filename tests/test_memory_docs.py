@@ -126,7 +126,7 @@ def test_upgrade_removes_only_agemem_entries_and_leaves_the_users_memory(repo):
     assert "Left on disk" in out and ".agemem/" in out and "memory/activeContext.md" in out
     rules = (repo / "AGENTS.md").read_text()
     assert "Agemem" not in rules and "project_memory" not in rules and "# mine" in rules
-    assert "previous memory system (agemem)" in rules
+    assert "Legacy memory" in rules and "Export and verify" in rules and "never delete" in rules
 
 
 def test_upgrade_is_idempotent(repo):

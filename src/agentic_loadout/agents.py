@@ -56,6 +56,8 @@ def grader_bytes(ctx: Ctx, memory: bool) -> bytes | None:
             return None
         raise SystemExit(f"error: the {pins.SDD_SKILL_NAME} skill (agents/code-grader.md) was not found; "
                          "re-run, or use --without sdd")
+    body = body.replace("[qa-tester.md](qa-tester.md)", "the sdd-html-feature skill’s agents/qa-tester.md")
+    body = body.replace("as in qa-tester.md", "as in the sdd-html-feature QA tester instructions")
     head = (ASSETS / "agents" / "code-grader.head.md").read_text(encoding="utf-8")
     head = head if memory else without_memory(head)
     return (head + body).encode("utf-8")
