@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- docs-1's `docs_index.py` no longer crashes with `FileNotFoundError` on every command when `git` is not installed;
+  it now works as documented, without staleness checks (docs-1 at `13b2e53`).
+
+### Changed
+- memory-1 and docs-1 gain Purpose, Examples, Requirements, Limitations and Troubleshooting sections and a "not for"
+  boundary in their descriptions (memory-1 at `a141c5a`); both now score A, 93.5/100, on NVIDIA SkillEvaluator's
+  quality check.
+
 ## [0.7.4] - 2026-11-17
 
 ### Changed
