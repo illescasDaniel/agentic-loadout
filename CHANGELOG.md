@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.3] - 2026-11-17
+
+### Changed
+- memory-1's session archive, `INDEX.md` included, is now always local: the ignore rule is `/sessions` in
+  `memory/.gitignore` (the exporter adds it when missing) instead of a `.gitignore` inside `memory/sessions/` that kept
+  the index tracked. Projects that already track it need `git rm -r --cached memory/sessions` (old copies stay in git
+  history); the skill says so (memory-1 at `ab2f497`).
+- Worktree sessions are collected into the main checkout: from a linked git worktree the export writes to the main
+  checkout's `memory/sessions`, links the worktree's folder to it when it can, and matches the sessions of every
+  worktree of the repository, including worktrees outside the project folder.
+
 ## [0.7.2] - 2026-11-16
 
 ### Added

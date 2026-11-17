@@ -53,7 +53,7 @@ def test_memory_and_docs_skills_are_copied_from_the_shipped_files_without_npx(re
         for folder in (".claude/skills", ".agents/skills"):
             for rel, data in skills.vendored_files(name).items():
                 assert (repo / folder / name / rel).read_bytes() == data, (folder, name, rel)
-    assert (repo / ".claude/skills/memory-1/templates/sessions/.gitignore").is_file()
+    assert (repo / ".claude/skills/memory-1/templates/.gitignore").is_file()
     installed = {c[c.index("add") + 1].split("#")[0] for c, _env in executor.calls if "add" in c}
     assert installed == {pins.SDD_SKILL, pins.WORKTREE_SKILL}  # memory-1 and docs-1 need no download
     assert not any("uvx" in c[0] for c, _env in executor.calls)

@@ -4,7 +4,7 @@ agentic-loadout ships adapted copies of two Agent Skills. Each copy is made from
 
 | Skill | Upstream repository | Commit |
 |---|---|---|
-| `memory-1` | https://github.com/illescasDaniel/memory-1-skill | `9572f47adf262f262600e2e36fd58f3af19be43f` |
+| `memory-1` | https://github.com/illescasDaniel/memory-1-skill | `ab2f4979ba6b376a9bfc3f6537483b13b47a98be` |
 | `docs-1` | https://github.com/illescasDaniel/docs-1-skill | `0fdbd5fbc39a7f5e6f8efb76a688ba3b734fcde9` |
 
 ## What differs from upstream
@@ -12,7 +12,6 @@ agentic-loadout ships adapted copies of two Agent Skills. Each copy is made from
 Every difference is an insertion between an `agentic-loadout:begin NAME` and an `agentic-loadout:end NAME` marker line (`#` comments in Python, HTML comments in Markdown). Removing the marked blocks, and the blank lines right after each end marker, gives the upstream file byte for byte. Nothing else is changed.
 
 - `memory-1/SKILL.md`, block `entire-note`: one paragraph about the opt-in `--entire` flag, in the Session archive section
-- `memory-1/scripts/export_sessions.py`, block `entire-import`: imports `subprocess` for the Entire pass
 - `memory-1/scripts/export_sessions.py`, block `entire-code`: the opt-in Entire pass (functions that read checkpoints from git data, same output format and redaction)
 - `memory-1/scripts/export_sessions.py`, block `entire-flag`: the `--entire` flag
 - `memory-1/scripts/export_sessions.py`, block `entire-only`: with `--entire` and no native sessions, run only the Entire pass instead of failing
@@ -24,14 +23,14 @@ Every difference is an insertion between an `agentic-loadout:begin NAME` and an 
 
 | File | sha256 | Differs |
 |---|---|---|
-| `memory-1/SKILL.md` | `67c33009adacee1e6de690f272b9a45a106b7a42011a08ed52f0e2eb3dd5a804` | yes |
-| `memory-1/scripts/export_sessions.py` | `7b98729c9a2c7033f86d890d9849da0670149167545cd7f93f734d31d7b83073` | yes |
+| `memory-1/SKILL.md` | `480a9caa7b772551b9a835b64d1e83d07a84b41b76a056fe66a6ef84d6129fb4` | yes |
+| `memory-1/scripts/export_sessions.py` | `477ce237882de4642f17c9fecf020cfa024598559000ba77aff436c391b335f8` | yes |
 | `memory-1/scripts/memory_check.py` | `4e617dbb339f4a67b9d0cb9c9db70b2e61ff51cb0c6580db9ac59f41f0f67522` | no |
+| `memory-1/templates/.gitignore` | `36cb3e2d2fdb2bad956337d5649c75b20cabb3c505cb728fefcbe3cb8b5dee6c` | no |
 | `memory-1/templates/LATER.md` | `b215b01ed2f7434b1287a2ebfc8dd7d69b89a97d0d464b7aa1ba7d0d65c1a676` | no |
 | `memory-1/templates/MEMORY.md` | `71375e4b3012cb78b1854265f9612752e8ca91e8bb59917b5642d4bddf0d9ad4` | no |
 | `memory-1/templates/NOW.md` | `33a49515e4993add3398dd761a2757678bed98e76de0bfa830ca7179ca72145f` | no |
 | `memory-1/templates/notes/_example.md` | `dfef86ac833702c9889b4fc3ec5200ac99538abb9421a9639d2e23ea873cb54e` | no |
-| `memory-1/templates/sessions/.gitignore` | `aed9e7d4a63ff17f621b0d7a501eb7177e4d2ea5831e66d2eff6d9e21b210b43` | no |
 | `memory-1/templates/sessions/INDEX.md` | `41bcbc17607e29348915c7eec91520310416437de7ed1016564e8b9586be0c4d` | no |
 | `docs-1/SKILL.md` | `4ee9cea6a5ae5113326cbe9bc5aaaf024ca6ddaf6802c66c2e3286b5dd516dc5` | no |
 | `docs-1/scripts/docs_index.py` | `50997305b0be70550d196f10d7563c657b16cd1302c96818d4faec8d1d3ecca4` | no |

@@ -6,15 +6,6 @@
 [[insert]]
 skill = "memory-1"
 file = "scripts/export_sessions.py"
-name = "entire-import"
-before = "HOME = Path.home()"
-body = "memory-1/export_sessions.entire-import.py"
-blank_after = 1
-description = "imports `subprocess` for the Entire pass"
-
-[[insert]]
-skill = "memory-1"
-file = "scripts/export_sessions.py"
 name = "entire-code"
 before = "def main(argv=None):"
 body = "memory-1/export_sessions.entire-code.py"

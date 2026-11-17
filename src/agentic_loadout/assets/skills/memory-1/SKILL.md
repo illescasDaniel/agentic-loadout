@@ -15,8 +15,9 @@ memory/
   MEMORY.md              index: one line per note (small memory) or one line per topic page (large memory)
   notes/<slug>.md        one fact per file, dated, with status and supersession links
   topics/<topic>.md      optional wiki page per subject: summary, how it evolved, links to its notes (see Growing)
-  sessions/              optional: condensed transcripts of past sessions (exported, redacted)
-  sessions/INDEX.md      one line per session: date, file, what it was about
+  sessions/              optional, local only (git-ignored): condensed transcripts of past sessions (exported, redacted)
+  sessions/INDEX.md      one line per session: date, file, what it was about (also local, never committed)
+  .gitignore             one line, `/sessions`: keeps the archive out of git
 ```
 
 ## How to trust what you read
@@ -34,7 +35,8 @@ memory/
 
 1. Read `memory/NOW.md` and `memory/MEMORY.md`. Check `NOW.md` against `git log` and `git status` since its date:
    work listed as next may already be done. If `memory/` is missing and the user wants memory, set it up from
-   `templates/` next to this file (NOW.md, MEMORY.md, and sessions/INDEX.md only if transcripts will be archived).
+   `templates/` next to this file (NOW.md, MEMORY.md, and, only if transcripts will be archived, sessions/INDEX.md and
+   `templates/.gitignore` as `memory/.gitignore`; if that file exists already, append its `/sessions` line instead).
 2. When the user says "continue" or "where were we", answer from `NOW.md` (checked against git), then the notes.
 3. Open individual notes only when the task touches them. For history questions, read the topic page if there is
    one, then search `memory/notes/` and `memory/sessions/` with grep before answering. Topic pages summarise: take
@@ -219,7 +221,7 @@ Help pages render in a bundled Chromium (CEF) view ([help-view-cef](../notes/hel
 The archive keeps the detail that notes summarise away. Export past sessions with the script next to this file:
 
 ```bash
-python3 <skill dir>/scripts/export_sessions.py --project . --out memory/sessions
+python3 <skill dir>/scripts/export_sessions.py --project .
 ```
 
 It reads Claude Code (`~/.claude/projects/`), Codex (`~/.codex/sessions/`) and opencode (its SQLite database,
@@ -238,8 +240,13 @@ same way. Entire needs a commit before a session has a checkpoint.
 After exporting, add one line per new session to `memory/sessions/INDEX.md` (and refresh the line of an updated one):
 `- 2026-10-05 [2026-10-05-1a2b3c4d.md](2026-10-05-1a2b3c4d.md): secret scanner batching vs per-line requests; moved v0.3.0 tag`.
 
-Transcripts are personal working history. By default `memory/sessions/` is git-ignored (the template ships a
-`.gitignore`); remove it to share the archive with the team, after checking that the redaction is enough.
+Transcripts are personal working history: the whole archive, `INDEX.md` included, stays on this machine, ignored by
+`memory/.gitignore` (`/sessions`). To share a decision or a reason with the team, write a note in `memory/notes/`.
+In a linked git worktree the archive lives in the main checkout: the exporter writes there, collects the sessions of
+every worktree, and links `memory/sessions` to it when it can.
+
+If `git ls-files memory/sessions` lists anything (an older setup committed it), run `git rm -r --cached memory/sessions`
+and add the `/sessions` rule to `memory/.gitignore`; the old copies stay in git history.
 
 ## End of session
 

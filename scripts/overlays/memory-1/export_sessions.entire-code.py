@@ -105,11 +105,15 @@ def render_entire(slot, session_id, data, max_chars, warn):
 
 
 def entire_gitignore(out):
-    """A fresh archive is git-ignored like the template; an archive that was shared on purpose is left alone."""
-    if (out / ".gitignore").exists() or any(p.name != "INDEX.md" for p in out.glob("*.md")):
+    """Keep a fresh archive out of git like the template: a `/sessions` line in the memory folder's .gitignore."""
+    if out.name != "sessions":
         return
-    out.mkdir(parents=True, exist_ok=True)
-    (out / ".gitignore").write_text("*\n!.gitignore\n!INDEX.md\n", encoding="utf-8")
+    gitignore = out.parent / ".gitignore"
+    old = gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""
+    if any(line.strip() in ("/sessions", "/sessions/", "sessions", "sessions/") for line in old.splitlines()):
+        return
+    out.parent.mkdir(parents=True, exist_ok=True)
+    gitignore.write_text(old + ("\n" if old and not old.endswith("\n") else "") + "/sessions\n", encoding="utf-8")
 
 
 def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=print, warn=None, planned=()):

@@ -30,7 +30,7 @@ Needs Node.js 20+ for the `sdd-feature` and `worktree` skills and the TypeScript
 with gopls for the Go coder. memory-1 and docs-1 need nothing but Python 3 (their scripts use the standard library).
 
 `--python 3.12` makes `uvx` use a tested Python instead of whichever is newest on your machine. To pin the loadout
-version, run `uvx --python 3.12 agentic-loadout@0.7.2 .`; individual dependencies may have their own version policy.
+version, run `uvx --python 3.12 agentic-loadout@0.7.3 .`; individual dependencies may have their own version policy.
 
 > [!NOTE]
 > Claude Code has its own built-in auto memory. To keep one shared memory in the repository (memory-1's `memory/`), turn

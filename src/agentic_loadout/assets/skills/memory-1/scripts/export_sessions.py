@@ -8,6 +8,9 @@ session has grown, so the script is safe to run at the end of every session.
 usage: export_sessions.py [--project DIR] [--out DIR] [--since YYYY-MM-DD] [--max-chars N] [--dry-run]
        export_sessions.py --claude-dir DIR ...   (moved project, or worktrees outside it; repeatable)
 Prints one line per new or updated file; add those to sessions/INDEX.md.
+In a git repository the sessions of all its worktrees are collected, and from a linked worktree the default --out is
+the main checkout's memory/sessions (linked from the worktree when possible). The archive is kept out of git by a
+`/sessions` line in memory/.gitignore, which the script adds when it is missing.
 Standard library only; Python 3.9+.
 """
 import argparse
@@ -15,14 +18,11 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 from datetime import datetime, timezone
 from functools import partial
 from pathlib import Path
-
-# agentic-loadout:begin entire-import
-import subprocess
-# agentic-loadout:end entire-import
 
 HOME = Path.home()
 CLAUDE_ROOT = Path(os.environ.get("CLAUDE_CONFIG_DIR", HOME / ".claude")) / "projects"
@@ -130,8 +130,8 @@ def opencode_db(note=True):
         return None
 
 
-def opencode_sessions(project):
-    """Return ids of opencode's own (not subagent) sessions whose working directory is inside the project."""
+def opencode_sessions(roots):
+    """Return ids of opencode's own (not subagent) sessions whose working directory is inside the project or a worktree."""
     db = opencode_db()
     if not db:
         return []
@@ -143,7 +143,7 @@ def opencode_sessions(project):
         return []
     finally:
         db.close()
-    return [sid for sid, directory in rows if inside(directory, project)]
+    return [sid for sid, directory in rows if any(inside(directory, root) for root in roots)]
 
 
 def read_opencode(sid, path):
@@ -190,25 +190,74 @@ def inside(cwd, project):
     return bool(cwd) and (Path(cwd) == project or project in Path(cwd).parents)
 
 
-def find_sessions(project, claude_dirs):
+def git_out(project, *args):
+    """Stdout of `git -C project args`, or None when git is missing, fails or is not a repository."""
+    try:
+        done = subprocess.run(["git", "-C", str(project), *args], capture_output=True, text=True, check=False, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+def git_layout(project):
+    """Return (in_repo, main checkout when project is a linked worktree else None, every worktree path of the repo)."""
+    git_dir, common, top = (git_out(project, "rev-parse", *a) for a in (("--git-dir",), ("--git-common-dir",), ("--show-toplevel",)))
+    if not (git_dir and common and top and Path(top).resolve() == project):
+        return False, None, [project]
+    git_dir, common = (Path(project, d).resolve() for d in (git_dir, common))  # relative answers are relative to project
+    main = common.parent if git_dir != common and common.name == ".git" else None
+    roots = [project] + [Path(line[9:]).resolve() for line in (git_out(project, "worktree", "list", "--porcelain") or "").splitlines()
+                         if line.startswith("worktree ")]
+    return True, main, list(dict.fromkeys(roots))
+
+
+def link_archive(local, target):
+    """Best effort: make a worktree's memory/sessions a symlink to the main checkout's archive."""
+    try:
+        if local.is_symlink() or (local.exists() and (not local.is_dir() or any(local.iterdir()))):
+            return
+        target.mkdir(parents=True, exist_ok=True)
+        if local.exists():
+            local.rmdir()
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.symlink_to(target, target_is_directory=True)
+    except OSError as err:
+        print(f"could not link {local} to {target} ({err}); sessions are still written there", file=sys.stderr)
+
+
+def ensure_ignored(out):
+    """Keep the archive out of git: a `/sessions` line in the memory folder's .gitignore (no slash at the end, so it
+    also matches a symlink)."""
+    gitignore = out.parent / ".gitignore"
+    try:
+        old = gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""
+        if any(line.strip() in ("/sessions", "/sessions/", "sessions", "sessions/") for line in old.splitlines()):
+            return
+        gitignore.write_text(old + ("\n" if old and not old.endswith("\n") else "") + "/sessions\n", encoding="utf-8")
+    except OSError as err:
+        print(f"could not update {gitignore} ({err}); keep {out.name}/ out of git yourself", file=sys.stderr)
+
+
+def find_sessions(project, claude_dirs, roots=None):
+    roots = roots or [project]
     found = []
     if claude_dirs:
         found += [("claude", p, read_claude) for d in claude_dirs for p in sorted(Path(d).glob("*.jsonl"))]
     elif CLAUDE_ROOT.is_dir():
         # Claude Code keeps a project's sessions under its absolute path with every non-alphanumeric character as "-";
         # worktrees inside the project get sibling folders with a longer name. Confirm each by its recorded cwd.
-        enc = re.sub(r"[^A-Za-z0-9]", "-", str(project))
+        encoded = [re.sub(r"[^A-Za-z0-9]", "-", str(root)) for root in roots]
         for cdir in sorted(CLAUDE_ROOT.iterdir()):
-            if cdir.name == enc or cdir.name.startswith(enc + "-"):
+            if any(cdir.name == enc or cdir.name.startswith(enc + "-") for enc in encoded):
                 found += [("claude", p, read_claude) for p in sorted(cdir.glob("*.jsonl"))
-                          if cdir.name == enc or inside(claude_cwd(p), project)]
+                          if cdir.name in encoded or any(inside(claude_cwd(p), root) for root in roots)]
     if CODEX_ROOT.is_dir():
         for path in sorted(CODEX_ROOT.rglob("*.jsonl")):
             meta = codex_meta(path)
             # Codex stores each subagent and automatic review as its own rollout; only the user's own sessions count.
-            if inside(meta.get("cwd"), project) and not (isinstance(meta.get("source"), dict) and "subagent" in meta["source"]):
+            if any(inside(meta.get("cwd"), root) for root in roots) and not (isinstance(meta.get("source"), dict) and "subagent" in meta["source"]):
                 found.append(("codex", path, read_codex))
-    found += [("opencode", OPENCODE_DB, partial(read_opencode, sid)) for sid in opencode_sessions(project)]
+    found += [("opencode", OPENCODE_DB, partial(read_opencode, sid)) for sid in opencode_sessions(roots)]
     return found
 
 
@@ -339,11 +388,15 @@ def render_entire(slot, session_id, data, max_chars, warn):
 
 
 def entire_gitignore(out):
-    """A fresh archive is git-ignored like the template; an archive that was shared on purpose is left alone."""
-    if (out / ".gitignore").exists() or any(p.name != "INDEX.md" for p in out.glob("*.md")):
+    """Keep a fresh archive out of git like the template: a `/sessions` line in the memory folder's .gitignore."""
+    if out.name != "sessions":
         return
-    out.mkdir(parents=True, exist_ok=True)
-    (out / ".gitignore").write_text("*\n!.gitignore\n!INDEX.md\n", encoding="utf-8")
+    gitignore = out.parent / ".gitignore"
+    old = gitignore.read_text(encoding="utf-8") if gitignore.exists() else ""
+    if any(line.strip() in ("/sessions", "/sessions/", "sessions", "sessions/") for line in old.splitlines()):
+        return
+    out.parent.mkdir(parents=True, exist_ok=True)
+    gitignore.write_text(old + ("\n" if old and not old.endswith("\n") else "") + "/sessions\n", encoding="utf-8")
 
 
 def export_entire(project, out, since=None, max_chars=6000, dry_run=False, log=print, warn=None, planned=()):
@@ -413,7 +466,8 @@ def entire_main(project, out, args, planned=()):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--project", default=".", help="project root whose sessions to export (default: .)")
-    ap.add_argument("--out", default="memory/sessions", help="output folder (default: memory/sessions)")
+    ap.add_argument("--out", help="output folder (default: memory/sessions, or the main checkout's when run in a "
+                    "linked git worktree)")
     ap.add_argument("--claude-dir", action="append", help="Claude Code transcript folder to use instead of the "
                     "default lookup (repeatable; for moved projects or worktrees outside the project)")
     ap.add_argument("--since", help="only sessions whose first message is on or after this date (YYYY-MM-DD)")
@@ -426,8 +480,13 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     project = Path(args.project).resolve()
-    out = Path(args.out)
-    sessions = find_sessions(project, args.claude_dir)
+    in_repo, main_checkout, roots = git_layout(project)
+    out = Path(args.out) if args.out else Path("memory/sessions")
+    if not args.out and main_checkout:
+        out = main_checkout / "memory" / "sessions"
+        if not args.dry_run:
+            link_archive(project / "memory" / "sessions", out)
+    sessions = find_sessions(project, args.claude_dir, roots)
     # agentic-loadout:begin entire-only
     if args.entire and not sessions:
         return entire_main(project, out, args)
@@ -452,6 +511,8 @@ def main(argv=None):
         if not args.dry_run:
             out.mkdir(parents=True, exist_ok=True)
             target.write_text(text, encoding="utf-8")
+            if in_repo and out.name == "sessions" and inside(out.resolve(), main_checkout or project):
+                ensure_ignored(out.resolve())
         print(f"{state:8} {target}  ({client}, {len(text) // 1024} KB)")
     print(", ".join(f"{v} {k}" for k, v in counts.items()), file=sys.stderr)
     # agentic-loadout:begin entire-run

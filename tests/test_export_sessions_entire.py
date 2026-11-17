@@ -151,15 +151,20 @@ def test_an_existing_session_file_is_never_rewritten(repo):
     assert (out / "2026-11-02-b09edd59.md").read_text() == "from the agent's own transcript"
 
 
-def test_fresh_archive_is_git_ignored_but_a_shared_archive_is_left_alone(repo):
+def test_fresh_archive_is_git_ignored_through_the_memory_folder(repo):
     commit_ref(repo, "refs/entire/checkpoints/7X/01AAAA", session_files(CODEX_ID, "codex", TURNS))
     assert run(repo) == 0
-    assert (repo / "memory/sessions/.gitignore").read_text().startswith("*")
-    shared = repo / "other/sessions"
-    shared.mkdir(parents=True)
-    (shared / "2026-10-01-aaaaaaaa.md").write_text("an earlier shared session")
-    assert exporter.main(["--project", str(repo), "--out", str(shared), "--entire"]) == 0
-    assert not (shared / ".gitignore").exists()
+    assert (repo / "memory/.gitignore").read_text().splitlines() == ["/sessions"]
+    assert not (repo / "memory/sessions/.gitignore").exists()
+    # an existing memory/.gitignore is extended, not replaced, and not extended twice
+    (repo / "memory/.gitignore").write_text("scratch")
+    other = repo / "memory/sessions"
+    exporter.entire_gitignore(other)
+    exporter.entire_gitignore(other)
+    assert (repo / "memory/.gitignore").read_text() == "scratch\n/sessions\n"
+    # an archive folder with another name is not touched
+    exporter.entire_gitignore(repo / "other/archive")
+    assert not (repo / "other/.gitignore").exists()
 
 
 def test_unknown_transcript_format_is_skipped_with_a_warning(repo, capsys):

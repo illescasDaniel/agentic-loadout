@@ -28,7 +28,7 @@ def vendored_files():
 def test_the_manifest_lists_exactly_the_vendored_files():
     assert set(MANIFEST) == vendored_files()
     assert {"memory-1/SKILL.md", "memory-1/scripts/export_sessions.py", "memory-1/scripts/memory_check.py",
-            "memory-1/templates/sessions/.gitignore", "docs-1/SKILL.md", "docs-1/scripts/docs_index.py"} <= set(MANIFEST)
+            "memory-1/templates/.gitignore", "docs-1/SKILL.md", "docs-1/scripts/docs_index.py"} <= set(MANIFEST)
 
 
 def test_stripping_the_marked_blocks_reproduces_the_recorded_upstream_hashes():
