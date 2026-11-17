@@ -126,7 +126,7 @@ def test_upgrade_removes_only_agemem_entries_and_leaves_the_users_memory(repo):
     assert "Left on disk" in out and ".agemem/" in out and "memory/activeContext.md" in out
     rules = (repo / "AGENTS.md").read_text()
     assert "Agemem" not in rules and "project_memory" not in rules and "# mine" in rules
-    assert "previous memory system (agemem)" in rules and "ignore the skill's memory-bank shortcut" in rules
+    assert "previous memory system (agemem)" in rules
 
 
 def test_upgrade_is_idempotent(repo):
@@ -244,6 +244,7 @@ def test_rules_and_agents_mention_no_agemem_tools():
         text = path.read_text(encoding="utf-8")
         if path.name == "memory-legacy.md":
             continue
+        text = text.replace(".agemem/", "")  # memory-1 names the old folder when it looks for a memory to migrate
         assert "project_memory" not in text and "mcp__agemem" not in text and "agemem" not in text.lower(), path
 
 

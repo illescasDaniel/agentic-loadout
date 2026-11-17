@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.4] - 2026-11-17
+
+### Changed
+- memory-1 no longer special-cases one memory tool. When memory is first set up, the skill looks for an existing
+  project memory (another `memory/` layout, `memory-bank/`, `.agemem/`, status files, memory sections in `AGENTS.md` or
+  `CLAUDE.md`) and proposes a migration to `NOW.md`, `LATER.md` and dated notes, keeping the old files until you
+  confirm. The legacy-memory item no longer mentions a shortcut to ignore.
+- memory-1 gains frontmatter metadata (license, author, version, tags), a Scripts table, and a Requirements and limits
+  section that states what the session export reads and keeps (memory-1 at `4fbbd81`).
+
 ## [0.7.3] - 2026-11-17
 
 ### Changed
