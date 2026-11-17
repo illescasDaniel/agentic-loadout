@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1] - 2026-11-17
+
+### Fixed
+- Preserve legacy memory stores and require exporting and verifying saved notes before any cleanup.
+- Correct the generated grader reference to the HTML SDD QA instructions.
+
 ## [0.8.0] - 2026-11-17
 
 ### Changed
