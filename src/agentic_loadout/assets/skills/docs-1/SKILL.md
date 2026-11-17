@@ -1,14 +1,16 @@
 ---
 name: docs-1
-description: Set up and maintain project documentation that AI agents can navigate fast and trust - one subject per Markdown doc with a stable ID, status, dates and the code paths it covers, a generated one-line-per-doc index, and a checker for stale docs, broken links and duplicate IDs. Use when asked to set up, organize, restructure or index project docs, write or update a doc (architecture, how-to, reference, runbook, decision record), find the docs for a file, or check that docs are up to date.
+description: Set up and maintain project documentation that AI agents can navigate fast and trust - one subject per Markdown doc with a stable ID, status, dates and the code paths it covers, a generated one-line-per-doc index, and a checker for stale docs, broken links and duplicate IDs. Use when asked to set up, organize, restructure or index project docs, write or update a doc (architecture, how-to, reference, runbook, decision record), find the docs for a file, or check that docs are up to date. Not for code comments, docstrings, generated API reference, or project status and session notes (those belong in project memory).
 license: MIT
 metadata:
   author: Daniel Illescas Romero <illescas.daniel@protonmail.com>
-  version: "1.1.0"
+  version: "1.2.0"
   tags: [documentation, docs, index, frontmatter, staleness]
 ---
 
 # docs-1
+
+## Purpose
 
 Docs live in `docs/` as plain Markdown. An agent reads `docs/INDEX.md` (one line per doc), opens only the docs it needs,
 and can tell from each doc's frontmatter whether the doc is current and which code it describes. The index is generated
@@ -120,14 +122,36 @@ Run it with `python3 <skill dir>/scripts/docs_index.py [--docs DIR] <command>`.
 
 `--docs DIR` defaults to `docs`; run from the repository root.
 
-## Requirements and limits
+## Examples
+
+- "Organize our docs": inventory the Markdown files, show the plan, add frontmatter in place, run `write` and `check`.
+- "Write a runbook for rotating the API key": `next-id`, start from `templates/doc.md`, fill `covers` with the config
+  file, then `write`.
+- "I'm changing `src/billing.py`": `covers src/billing.py`, read those docs, and update them in the same change.
+
+## Requirements
 
 - Python 3.9 or newer, standard library only. Without a shell, keep the frontmatter and `docs/INDEX.md` consistent by hand.
-- Staleness needs a git repository with history: outside git, or if `git` is missing, `check` still validates fields and
-  links but cannot flag stale docs. A shallow clone may lack the `verified` commit; it then compares by date.
+- `git` is optional: staleness needs a repository with history. Outside git, or if `git` is missing, every command still
+  works and `check` validates fields and links but cannot flag stale docs.
+
+## Limitations
+
+- A shallow clone may lack the `verified` commit; `check` then compares by date.
 - `check` reads every Markdown file under the repository (skipping `node_modules`, `vendor`, `dist`, `build`, `target`
   and virtualenvs). It only reads files and runs read-only `git` commands; `write` regenerates the index files and `verify` edits the frontmatter of the docs you name.
 - `ERROR` lines must be fixed (`check` exits 1). `STALE?` and `WARN` lines are prompts to re-check, not failures.
+- A `STALE?` flag means the covered code changed, not that the doc is wrong; only reading both tells.
+
+## Troubleshooting
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `no docs folder at docs` | No `docs/` yet, or not run from the repository root | Create `docs/`, or pass `--docs DIR` |
+| `ERROR duplicate id DOC-n` | Two docs share an ID (often a copied doc) | Keep the older doc's ID; give the other `next-id` and fix links to it |
+| `ERROR ...: broken link` | A link points at a moved or renamed file | Point it at the current path, or link by ID |
+| `STALE?` right after checking a doc | `verified` holds only a date, and commits from that same day count | Run `verify DOC-n` inside the repository so it stores the commit |
+| `WARN ...: never verified against the code` | `covers` is set but `verified` is empty | Check the doc against the code, then `verify DOC-n` |
 
 ## Rules
 

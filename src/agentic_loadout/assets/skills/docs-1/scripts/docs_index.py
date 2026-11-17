@@ -136,7 +136,11 @@ def glob_re(pattern):
 
 
 def git(root, *args):
-    r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+    """Output of git with these arguments run in root, or None when git is missing, fails or is not a repository."""
+    try:
+        r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
     return r.stdout.strip() if r.returncode == 0 else None
 
 
