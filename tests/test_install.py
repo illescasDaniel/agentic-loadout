@@ -225,3 +225,12 @@ def test_given_without_worktree_then_neither_skill_nor_rules(repo):
     assert "Isolated worktrees" not in (repo / "AGENTS.md").read_text()
 
 
+
+
+def test_cli_version_matches_package_metadata():
+    import tomllib
+    from pathlib import Path
+    from agentic_loadout import __version__
+
+    project = Path(__file__).resolve().parents[1]
+    assert __version__ == tomllib.loads((project / 'pyproject.toml').read_text())['project']['version']
